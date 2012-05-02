@@ -67,7 +67,7 @@ install()->
 				       "BTS number"]}, %% helpstr 
 
     Show_trx_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
-			   io:format("NumberList: ~p~n",[NumberList]),
+			   io:format("NumberList: ~w~n",[NumberList]),
 			   cmd_success end, %% dummy
 
     Show_trx_cmd = #command{funcname= Show_trx_fun, 
@@ -78,7 +78,7 @@ install()->
 				       "TRX Number"]},
 
     Show_ts_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
-			  io:format("NumberList: ~p~n",[NumberList]),
+			  io:format("NumberList: ~w~n",[NumberList]),
 			  cmd_success end, %% dummy
 
     Show_ts_cmd = #command{funcname= Show_ts_fun,
@@ -90,7 +90,7 @@ install()->
 				      "Timeslot Number"]},
 
     Show_lchan_fun = fun(_VTY_PID,_SelectionList, NumberList)-> 
-			     io:format("NumberList: ~p~n",[NumberList]),
+			     io:format("NumberList: ~w~n",[NumberList]),
 			     cmd_success end, %% dummy
 
     Show_lchan_cmd= #command{funcname= Show_lchan_fun,
@@ -103,7 +103,7 @@ install()->
 					?LCHAN_NR_STR]},
 
     Show_lchan_summary_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
-				     io:format("NumberList: ~p~n",[NumberList]),
+				     io:format("NumberList: ~w~n",[NumberList]),
 				     cmd_success end, %% dummy
 
     Show_lchan_summary_cmd= #command{funcname= Show_lchan_summary_fun,
@@ -117,7 +117,7 @@ install()->
 					       ?LCHAN_NR_STR]},
 
     Show_paging_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
-			      io:format("NumberList: ~p~n",[NumberList]),
+			      io:format("NumberList: ~w~n",[NumberList]),
 			      cmd_success end, %% dummy
 
     Show_paging_cmd = #command{funcname= Show_paging_fun,
@@ -138,7 +138,7 @@ install()->
 			    helpstr = [?NETWORK_STR]},
 
     Cfg_net_ncc_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
-			      io:format("NumberList: ~p~n",[NumberList])
+			      io:format("NumberList: ~w~n",[NumberList])
 		      end, %% dummy
 
     Cfg_net_ncc_cmd = #command{ funcname=Cfg_net_ncc_fun, 
