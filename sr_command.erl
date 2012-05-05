@@ -97,12 +97,12 @@ install_default(NodeID) ->
 	_ ->
 	    sr_telnet_registration:install_element([NodeID], Config_end_cmd)
     end,
-    
+
     Echo_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
 			[Str] = StrList,
-				  vty_out(VTY_PID, "%% ~p ~n",[Str]),
-				  cmd_success
-			  end,
+			vty_out(VTY_PID, "%% ~p ~n",[Str]),
+			cmd_success
+		end,
 
     Echo_cmd = 
 	#command{funcname = Echo_fun,
@@ -188,6 +188,31 @@ vty_out(VTY_PID, StringWithCR, List) ->
     FormattedStringWithCRLF = re:replace(FormattedStringWithCR,binary_to_list(<<?LF>>),binary_to_list(<<?CR>>) ++ binary_to_list(<<?LF>>),[global, {return, list}]), 
     VTY_PID ! {output, FormattedStringWithCRLF}.
 
+%% write_nodes(VTY_PID)->
+%%     FirstNodeKey = ets:first(commandTable),
+%%     write_node(VTY_PID, FirstNodeKey).
+
+%% write_node(VTY_PID, NodeKey)->
+%%     case NodeKey of 
+%% 	'$end_of_table' -> % last registered node already written
+%% 	    ok;
+%% 	_ ->
+%% 	    [Node] = ets:lookup(commandTable, NodeKey),
+%% 	    io:format("Node: ~p~n",[Node]),
+%% 	    Write_command = Node#node.write_command,
+%% 	    case Write_command of
+%% 		undefined -> % nothing to write for this node
+%% 		    %% vty_out(VTY_PID,"Not writing node: ~p~n",[Node#node.nodeID]),
+%% 		    ok;
+%% 		_ -> % execute the node's fun
+%% 		    %% vty_out(VTY_PID,"Writing node: ~p~n",[Node#node.nodeID]),
+%% 		    Write_fun = Node#node.write_command,
+%% 		    Write_fun(VTY_PID)
+%% 	    end,
+%% 	    NextNodeKey = ets:next(commandTable,NodeKey),
+%% 	    write_node(VTY_PID, NextNodeKey)
+%%     end.
+
 write_nodes(VTY_PID)->
     FirstNodeKey = ets:first(commandTable),
     write_node(VTY_PID, FirstNodeKey).
@@ -198,18 +223,70 @@ write_node(VTY_PID, NodeKey)->
 	    ok;
 	_ ->
 	    [Node] = ets:lookup(commandTable, NodeKey),
-	    io:format("Node: ~p~n",[Node]),
-	    Write_command = Node#node.write_command,
-	    case Write_command of
-		undefined -> % nothing to write for this node
-		    %% vty_out(VTY_PID,"Not writing node: ~p~n",[Node#node.nodeID]),
-		    ok;
-		_ -> % execute the node's fun
-		    %% vty_out(VTY_PID,"Writing node: ~p~n",[Node#node.nodeID]),
-		    Write_fun = Node#node.write_command,
-		    Write_fun(VTY_PID)
-	    end,
+	    %% io:format("Node: ~w~n",[Node]),
+	    CommandListTableID = Node#node.commandListTableID,
+	    CommandListTable = ets:tab2list(CommandListTableID),
+	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),
+	    write_elements(VTY_PID, CommandListTable),
 	    NextNodeKey = ets:next(commandTable,NodeKey),
 	    write_node(VTY_PID, NextNodeKey)
     end.
 
+write_elements(_VTY_PID, [])->
+    ok;
+
+write_elements(VTY_PID, [Head|Tail])->
+    {_NodeID, Command} = Head,
+    case Command#command.basicwrite of
+	undefined -> % nothing to write for this element
+	    io:format("Not writing command: ~p~n",[Command#command.cmdstr]),
+	    ok;
+	_ -> % execute the elements's fun
+	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
+	    BasicWrite_fun = Command#command.basicwrite,
+	    BasicWrite_fun(VTY_PID)
+    end,
+    case Command#command.enhancedwrite of
+	undefined -> % nothing to write for this element
+	    io:format("Not writing command: ~p~n",[Command#command.cmdstr]),
+	    ok;
+	_ -> % execute the elements's fun
+	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
+	    CmdStrStrippedList = commandStringStrip(Command#command.cmdstr),
+	    vty_out(VTY_PID, "~s ", [string:join(CmdStrStrippedList," ")]),
+	    EnhancedWrite_fun = Command#command.enhancedwrite,
+	    EnhancedWrite_fun(VTY_PID)
+    end,
+    write_elements(VTY_PID, Tail).
+
+commandStringStrip(List)->
+    commandStringStrip(List, []).
+
+commandStringStrip([], Acc)->
+    lists:reverse(Acc);
+
+commandStringStrip([Head|Tail], Acc)->
+    OptionalNumberGuardOpening = string:chr(Head, $[ ), 
+    OptionalNumberGuardClosing = string:chr(Head, $] ), 
+    MandatoryNumberGuardOpening = string:chr(Head, $< ), 
+    MandatoryNumberGuardClosing = string:chr(Head, $> ),    
+    SelectionListGuardOpening = string:chr(Head, ${ ), 
+    SelectionListGuardClosing = string:chr(Head, $} ),
+    StrGuard = (string:to_upper(Head) == Head),
+    if 
+	((OptionalNumberGuardOpening == 1) and (OptionalNumberGuardClosing == length(Head))) -> % [XXX]: Optional Number 
+	    %% Suppress all Optional Numbers and following list elements
+	    commandStringStrip([], Acc);
+	(( MandatoryNumberGuardOpening == 1) and (MandatoryNumberGuardClosing == length(Head))) -> % <XXX>: Mandatory Number
+	    %% Suppress all Mandatory Numbers and following list elements
+	    commandStringStrip([], Acc); 	    
+	(( SelectionListGuardOpening == 1) and (SelectionListGuardClosing == length(Head))) -> % {XXX|YYY|ZZZ}: Selection list 
+  	    %% Suppress all Selection list elements and following list elements
+	    commandStringStrip([], Acc); 	 
+	StrGuard->
+  	    %% Suppress all Capitalized elements and following list elements
+	    commandStringStrip([], Acc);
+	true -> % XXXX: String
+	    %% Keep all other elements and following list elements
+	    commandStringStrip(Tail, [Head|Acc])
+    end.

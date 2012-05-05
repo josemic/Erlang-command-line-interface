@@ -148,18 +148,44 @@ install()->
 					   ?CODE_CMD_STR,
 					   "Network Country Code to use"]},
 
-    Cfg_net_name_short_fun =  fun(_VTY_PID, _SelectionList, _NumberList, _StrList)->
-				      %% TODO: NAME not supported by parser yet
-				      true end,  %% dummy
+    Cfg_net_name_short_fun =  fun(VTY_PID, _SelectionList, _NumberList, StrList)->
+				      io:format("StrList ~w~n", [StrList]),
+				      [NameShort] = StrList,
+				      %%ets:insert(gsmnet_table, {name_short,  NameShort}),
+				      sr_command:vty_out(VTY_PID,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)])
+			      end,
+    Cfg_net_name_short_basicwrite_fun = fun(VTY_PID) ->
+						NameShort = ets:lookup_element(gsmnet_table,name_short, 2),   
+						sr_command:vty_out(VTY_PID,  "short name ~s ~n", [NameShort]) 
+					end,
 
     Cfg_net_name_short_cmd = #command{funcname= Cfg_net_name_short_fun,
 				      cmdstr  = ["short", "name", "NAME"],
 				      helpstr = ["Set the short GSM network name", 
 						 ?NAME_CMD_STR, 
-						 ?NAME_STR]},
+						 ?NAME_STR],
+				      basicwrite = Cfg_net_name_short_basicwrite_fun},
+
+    Cfg_net_name_long_fun =  fun(VTY_PID, _SelectionList, _NumberList, StrList)->
+				     io:format("StrList ~w~n", [StrList]),
+				     [NameLong] = StrList,
+				     %% ets:insert(gsmnet_table, {name_long,  NameLong}),
+				     sr_command:vty_out(VTY_PID,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)])
+			     end,
+
+    Cfg_net_name_long_enhancedwrite_fun = fun(VTY_PID) ->
+						  NameLong = ets:lookup_element(gsmnet_table,name_long, 2),   
+						  sr_command:vty_out(VTY_PID,  "~s ~n", [NameLong])  
+					  end,
+
+    Cfg_net_name_long_cmd = #command{funcname      = Cfg_net_name_long_fun,
+				     cmdstr        = ["long", "name", "NAME"],
+				     helpstr       = ["Set the long GSM network name", 
+						      ?NAME_CMD_STR, 
+						      ?NAME_STR],
+				     enhancedwrite = Cfg_net_name_long_enhancedwrite_fun},
 
     Cfg_trx_arfcn_fun = fun(_VTY_PID, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
-
 
     Cfg_trx_arfcn_cmd = #command{funcname = Cfg_trx_arfcn_fun,
 				 cmdstr   =["arfcn", "<0-1024>"],
@@ -190,7 +216,8 @@ install()->
     %% Enter gsmnet_node
     sr_telnet_registration:install_element([enable_node, view_node], Cfg_net_cmd),
     sr_telnet_registration:install_element([gsmnet_node], Cfg_net_ncc_cmd),
-    sr_telnet_registration:install_element([gsmnet_node], Cfg_net_name_short_cmd),
+    sr_telnet_registration:install_element([gsmnet_node], Cfg_net_name_short_cmd), 
+    sr_telnet_registration:install_element([gsmnet_node], Cfg_net_name_long_cmd),
     sr_telnet_registration:install_element([gsmnet_node], Cfg_trx_arfcn_cmd),
     sr_telnet_registration:install_element([gsmnet_node], Cfg_bts_lac_cmd),
     %% should be config node instead of gsmnet_node	
@@ -227,7 +254,7 @@ net_dump_vty(VTY_PID,  Gsmnet_table_name) ->
     NetworkCode = ets:lookup_element(Gsmnet_table_name,network_code, 2),
     NumBTS = ets:lookup_element(Gsmnet_table_name,num_bts, 2),
     sr_command:vty_out(VTY_PID,  "BSC is on Country Code ~p, Network Code ~p "++
-			"and has ~p BTS~n", [CountryCode, NetworkCode, NumBTS]),  
+			   "and has ~p BTS~n", [CountryCode, NetworkCode, NumBTS]),  
     NameLong = ets:lookup_element(Gsmnet_table_name,name_long, 2),
     sr_command:vty_out(VTY_PID,  "  Long network name: ~p~n", [NameLong]),
     NameShort = ets:lookup_element(Gsmnet_table_name,name_short, 2),

@@ -169,10 +169,10 @@ register_node(NodeID, NodePropperties)->
 			 write_command =NodePropperties#node_propperties.write_fun,
 			 exec_mode =NodePropperties#node_propperties.exec_mode,
 			 configuration_level =NodePropperties#node_propperties.configuration_level,
-			 commandListTableID = NodeTableID, nodeID = NodeID},
+			 commandListTableID = NodeTableID, 
+			 nodeID = NodeID},
 	    ets:insert(commandTable, Node)
     end.
-%%io:format("Tabelle: ~w~n", [ets:tab2list(commandTable)]).
 
 register_element([], _NodeCommand) -> 
     true;
