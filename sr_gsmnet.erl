@@ -66,7 +66,7 @@ install()->
 				       "Display information about a BTS", 
 				       "BTS number"]}, %% helpstr 
 
-    Show_trx_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
+    Show_trx_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
 			   io:format("NumberList: ~w~n",[NumberList]),
 			   cmd_success end, %% dummy
 
@@ -77,7 +77,7 @@ install()->
 				       "BTS Number",
 				       "TRX Number"]},
 
-    Show_ts_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
+    Show_ts_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
 			  io:format("NumberList: ~w~n",[NumberList]),
 			  cmd_success end, %% dummy
 
@@ -89,7 +89,7 @@ install()->
 				      "TRX Number",
 				      "Timeslot Number"]},
 
-    Show_lchan_fun = fun(_VTY_PID,_SelectionList, NumberList)-> 
+    Show_lchan_fun = fun(_VTY_PID,_SelectionList, NumberList, _StrList)-> 
 			     io:format("NumberList: ~w~n",[NumberList]),
 			     cmd_success end, %% dummy
 
@@ -102,7 +102,7 @@ install()->
 					"Timeslot Number",
 					?LCHAN_NR_STR]},
 
-    Show_lchan_summary_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
+    Show_lchan_summary_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
 				     io:format("NumberList: ~w~n",[NumberList]),
 				     cmd_success end, %% dummy
 
@@ -116,7 +116,7 @@ install()->
 					       "Timeslot Number",
 					       ?LCHAN_NR_STR]},
 
-    Show_paging_fun = fun(_VTY_PID, _SelectionList, NumberList)-> 
+    Show_paging_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
 			      io:format("NumberList: ~w~n",[NumberList]),
 			      cmd_success end, %% dummy
 

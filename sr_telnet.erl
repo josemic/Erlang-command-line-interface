@@ -215,7 +215,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	<<?CR, Remain/binary>> ->
 	    io:format("Commandline buffer: '~p'~n",[Acc]),
 	    Ok_fun = fun(X)->case X of {ok, _State} -> true;_-> false end end,
-	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Ok_fun, provide_hidden),
+	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, string:strip(binary:bin_to_list(Acc), right), Ok_fun, provide_hidden),
 	    io:format("Matchlist : ~p~n", [Matchlist]),
 	    Set_of_Matching_Commands = sr_telnet_registration:get_command_execution_list(Matchlist),
 	    io:format("Set_of_Matching_Commands : ~p~n", [Set_of_Matching_Commands]),
