@@ -11,6 +11,10 @@
 	 configuration_level = undefined ::string(),   % string or undefined
 	 exec_mode           = root      ::user | root}).
 
--record(command, {funcname     ::function(),
-		  cmdstr       ::[string()],
-		  helpstr      ::[string()]}).
+-record(command, {funcname                       ::function(),
+		  cmdstr                         ::[string()],
+		  helpstr                        ::[string()],
+		  basicwrite = undefined         ::function(),  % function or undefined
+		  enhancedwrite = undefined      ::function(),  % function or undefined
+		  hidden        = undefined      ::yes | no     % yes, no or undefined   
+}).
