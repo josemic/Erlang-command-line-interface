@@ -20,7 +20,7 @@ install_default(NodeID) ->
 				       "2. Partial help is provided when an abbreviated argument is entered~n"
 				       "and you want to know what arguments match the input~n"
 				       "(e.g. 'show me?'.)~n~n",[]),
-			       cmd_sucess
+			       cmd_success
 		       end,
 
     Config_help_cmd= #command{funcname= Config_help_fun,

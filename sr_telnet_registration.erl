@@ -1,7 +1,7 @@
 -module(sr_telnet_registration).
--export([ start/0, telnet_process/0, create_parser_list/1, test_commandstring/3, 
-	  get_command_list/1, get_command_execution_list/1, get_completion_list/1, 
-	  get_option_list/1, install_node/2, install_element/2]).
+-export([ start/0, telnet_process/0, create_parser_list/1, test_commandstring/4, 
+	  create_command_list/1, get_command_list/1, get_command_execution_list/1, 
+	  get_completion_list/1, get_option_list/1, install_node/2, install_element/2]).
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 
@@ -40,12 +40,19 @@ telnet_process_loop()->
 
 
 
-test_commandstring(NodeID, CommandlineString, Match_fun)->
+test_commandstring(NodeID, CommandlineString, Match_fun, FilterHidden)->
     case ets:lookup(commandTable, NodeID) of
-	[#node{nodeID = NodeID, commandListTableID = NodeTableID}] -> 
-	    io:format("Table for node: ~p:~n~p~n", [NodeID, ets:tab2list(NodeTableID)]),
-	    Extract_Cmdstr_fun = fun(CommandRecord) ->
-					 {NodeID, #command{cmdstr = Cmdstr, helpstr = _Helpstr, funcname = _Funcname}=Command}=CommandRecord,
+	[#node{nodeID = NodeID, commandListTableID = NodeTableID}] ->
+	    CommandList = create_command_list(ets:tab2list(NodeTableID)),
+	    case FilterHidden of
+		filter_hidden ->
+		    NonHiddenCommandList = lists:filter(fun(X) -> (X#command.hidden /= yes) end, CommandList);
+		provide_hidden ->
+		    NonHiddenCommandList = CommandList
+	    end,
+	    io:format("Table for node: ~p:~n~p~n", [NodeID, NonHiddenCommandList]),
+	    Extract_Cmdstr_fun = fun(Command) ->
+					 #command{cmdstr = Cmdstr, helpstr = _Helpstr, funcname = _Funcname}=Command,
 					 Fun = create_parser_list(Cmdstr),
 					 Fun(#state{input=CommandlineString, command=Command}) % store command record for later processing.
 				 end,
@@ -55,12 +62,23 @@ test_commandstring(NodeID, CommandlineString, Match_fun)->
 	    %% Partially_fun = fun(X)->case X of {partially, _State} -> true;_-> false end end,
 	    %% Fail_fun = fun(X)->case X of {fail, _State} -> true;_-> false end end,
 	    %% Incomplete_fun = fun(X)->case X of {incomplete, _State} -> true;_-> false end end,
-	    A = lists:map(Extract_Cmdstr_fun, ets:tab2list(NodeTableID)),
+	    A = lists:map(Extract_Cmdstr_fun, NonHiddenCommandList),
 	    lists:filter(Match_fun, A);
 
 	[] -> % should not occur
 	    throw({error, {node_unknown, NodeID}})
     end.  
+
+create_command_list(List)->
+    create_command_list(List, []).
+
+create_command_list([], Acc)->
+    lists:reverse(Acc);
+
+create_command_list([Head|Tail], Acc)->
+    {_NodeID, Command} = Head,
+    create_command_list(Tail, [Command|Acc]).
+
 
 get_command_list(CommandList) -> 
     get_command_list(CommandList, []).

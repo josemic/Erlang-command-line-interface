@@ -173,7 +173,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	<<"\t", Remain/binary>> when byte_size(Acc) == Status#status.position ->
 	    io:format("Commandline buffer: '~p'~n",[Acc]),
 	    Partially_fun = fun(X)->case X of {partially, _State} -> true;_-> false end end,
-	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Partially_fun),
+	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Partially_fun, provide_hidden),
 	    io:format("Matchlist : ~p~n", [Matchlist]),
 	    Set_of_Completions = sr_telnet_registration:get_completion_list(Matchlist),
 	    io:format("Set_of_Completions : ~p~n", [Set_of_Completions]),
@@ -215,18 +215,18 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	<<?CR, Remain/binary>> ->
 	    io:format("Commandline buffer: '~p'~n",[Acc]),
 	    Ok_fun = fun(X)->case X of {ok, _State} -> true;_-> false end end,
-	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Ok_fun),
+	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Ok_fun, provide_hidden),
 	    io:format("Matchlist : ~p~n", [Matchlist]),
 	    Set_of_Matching_Commands = sr_telnet_registration:get_command_execution_list(Matchlist),
 	    io:format("Set_of_Matching_Commands : ~p~n", [Set_of_Matching_Commands]),
 	    case length(Set_of_Matching_Commands) of
 		%% no matching commands, thus look at the failed commands and determine the longest failed command to put the indicator '^'
 		0 ->  Partially_fun = fun(X)->case X of {partially, _State} -> true;_-> false end end,
-		      PartiallyMatchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Partially_fun),
+		      PartiallyMatchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Partially_fun,provide_hidden),
 		      io:format("PartiallyMatchlist : ~p~n", [PartiallyMatchlist]),
 		      case length(PartiallyMatchlist) of
 			  0 -> Fail_fun = fun(X)->case X of {fail, _State} -> true;_-> false end end,
-			       FailMatchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Fail_fun),
+			       FailMatchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Fail_fun, provide_hidden),
 			       io:format("FailMatchlist : ~p~n", [FailMatchlist]),
 			       FailMatchlist_mapped = lists:map(fun(H)-> {fail,#state{parsed_list=A}}=H,io:format("A: ~p~n", [A]), A end, FailMatchlist), 
 			       io:format("FailMatchlist mappped: ~p~n", [FailMatchlist_mapped]),
@@ -312,7 +312,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 				      cmd_success;
 				  cmd_list ->
 				      %% list all commands on the screen
-				      CommandList = get_command_list(Status#status.node),
+				      CommandList = get_non_hidden_command_list(Status#status.node),
 				      print_list_to_telnet_console(Socket, CommandList),
 						%print_command_list(Socket, Status#status.node),
 				      NewStatus1 = Status,
@@ -406,7 +406,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	<<"?", Remain/binary>> ->
 	    %%io:format("SpaceBefore~n"),
 	    Ok_or_partially_fun = fun(X)->case X of {ok, _State} -> true;{partially, _State} -> true;_-> false end end,
-	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, string:strip(binary:bin_to_list(Acc)), Ok_or_partially_fun),
+	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, string:strip(binary:bin_to_list(Acc)), Ok_or_partially_fun, filter_hidden),
 	    io:format("Matchlist : ~p~n", [Matchlist]),
 	    Set_of_Commands = sr_telnet_registration:get_command_list(Matchlist),
 	    io:format("Set_of_Commands : ~p~n", [Set_of_Commands]),
@@ -666,23 +666,13 @@ get_nth_element(N, Queue) ->
     end.
 
 
-get_command_list(NodeID)->
+get_non_hidden_command_list(NodeID)->
     %% lookup ets table identifier of given node in commandTable
     [#node{nodeID = NodeID, commandListTableID = NodeTableID}] = ets:lookup(commandTable, NodeID),
     %% convert table of current node to list
-    NodeTableList = ets:tab2list(NodeTableID),
-    io:format("NodeTable: ~p~n", [NodeTableList]),
-    assemble_command_list (NodeID, NodeTableList, []).
-
-assemble_command_list(_NodeID, [], Acc)->
-    lists:reverse(Acc);
-
-assemble_command_list(NodeID, [Head|Tail], Acc) ->
-    {NodeID,Command}=Head,	    
-    Cmdstr = string:join(Command#command.cmdstr, " "),
-    assemble_command_list(NodeID, Tail, [Cmdstr|Acc]).
-
-
+    CommandList = sr_telnet_registration:create_command_list(ets:tab2list(NodeTableID)),
+    NonHiddenCommandList = lists:filter(fun(X) -> X#command.hidden /= yes end, CommandList),
+    lists:map(fun(X) -> string:join(X#command.cmdstr, " ") end, NonHiddenCommandList).
 
 generate_commandline_history_list(Queue) ->
     Commandline_history_list = queue:to_list(Queue),
