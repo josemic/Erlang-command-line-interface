@@ -180,7 +180,7 @@ create_parser_list([Head|Tail], Start, Acc) -> % Start flags the first item to e
 register_node(NodeID, NodePropperties)-> 
     case ets:lookup(commandTable, NodeID) of
 	[#node{nodeID = NodeID}] -> 
-	    io:format("Warning!! ~ninstall_node(~w, ...). ~w has already been registered. ~nCommand will be ignored. ~n", [NodeID, NodePropperties]);
+	    io:format("Warning!! ~ninstall_node(~w, ...). ~p has already been registered. ~nCommand will be ignored. ~n", [NodeID, NodePropperties]);
 	[] ->
 	    NodeTableID = ets:new(NodeID,[bag]),
 	    Node = #node{prompt=[],
