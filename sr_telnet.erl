@@ -313,7 +313,9 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 				  cmd_list ->
 				      %% list all commands on the screen
 				      CommandList = get_non_hidden_command_list(Status#status.node),
-				      print_list_to_telnet_console(Socket, CommandList),
+				      Fun = fun(A,B) -> A < B end,
+				      SortedCommandList = lists:sort(Fun, CommandList),
+				      print_list_to_telnet_console(Socket, SortedCommandList),
 						%print_command_list(Socket, Status#status.node),
 				      NewStatus1 = Status,
 				      cmd_success;
