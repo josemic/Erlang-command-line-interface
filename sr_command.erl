@@ -66,6 +66,31 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Exit_cmd),
 
 
+    Write_file_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
+			      [Filename] = StrList,
+			      Result = file:open(Filename, write),
+			      case Result of 
+				  {ok, IoDevice} ->
+				      vty_out(VTY_PID, "%% Writing nodes to file: ~s ~n", [Filename]),
+				      write_nodes({file, IoDevice}),
+				      file:close(IoDevice),
+				      cmd_success;
+				  {error, Reason} ->
+				      vty_out(VTY_PID, "~nFailed writing to file \"~s\" !!!!! ~n", [Filename]),
+				      vty_out(VTY_PID, "Error reason: ~s ~n", [Reason]),
+				      cmd_warning 
+			      end
+		      end,
+
+    Write_file_cmd = 
+	#command{funcname = Write_file_fun,
+		 cmdstr   = ["write","file", "FILENAME"],
+		 helpstr  = ["Write running configuration to memory, network, or terminal",
+			     "Write to configuration file"]},
+
+    sr_telnet_registration:install_element([NodeID], Write_file_cmd),
+
+
     Write_terminal_fun =  fun (VTY_PID, _SelectionList, _NumberList, _StrList) ->
 				  vty_out(VTY_PID, "%% Writing nodes... ~n"),
 				  write_nodes(VTY_PID),
@@ -79,6 +104,7 @@ install_default(NodeID) ->
 			     "Write to terminal"]},
 
     sr_telnet_registration:install_element([NodeID], Write_terminal_cmd),
+
 
     Config_end_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
 			      cmd_end
@@ -185,8 +211,13 @@ vty_out(VTY_PID, String) ->
 vty_out(VTY_PID, StringWithCR, List) ->
     %% Substitute all ?CR with ?CR ?LF for telnet
     FormattedStringWithCR = io_lib:format(StringWithCR, List),
-    FormattedStringWithCRLF = re:replace(FormattedStringWithCR,binary_to_list(<<?LF>>),binary_to_list(<<?CR>>) ++ binary_to_list(<<?LF>>),[global, {return, list}]), 
-    VTY_PID ! {output, FormattedStringWithCRLF}.
+    case VTY_PID of
+	{vty, PID} ->
+	    FormattedStringWithCRLF = re:replace(FormattedStringWithCR,binary_to_list(<<?LF>>),binary_to_list(<<?CR>>) ++ binary_to_list(<<?LF>>),[global, {return, list}]), 
+	    PID ! {output, FormattedStringWithCRLF};
+	{file, IoDevice} ->
+	    file:write(IoDevice, FormattedStringWithCR)
+    end.
 
 %% write_nodes(VTY_PID)->
 %%     FirstNodeKey = ets:first(commandTable),

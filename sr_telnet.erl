@@ -271,7 +271,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		     io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
 		     Command_fun = Command#command.funcname,
 		     %% Execute the fun 
-		     Result = case Command_fun(self(), SelectionList, NumberList, StrList) of
+		     Result = case Command_fun({vty, self()}, SelectionList, NumberList, StrList) of
 				  cmd_warning ->
 				      gen_tcp:send(Socket,<<?BEL>>),
 				      NewStatus1 = Status,
