@@ -6,8 +6,8 @@
 
 install_default(NodeID) ->
     %% Help display function for all node.
-    Config_help_fun =  fun (VTY_PID, _SelectionList, _NumberList, _StrList) ->
-			       vty_out(VTY_PID,
+    Config_help_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+			       vty_out(VTY,
 				       "This VTY provides advanced help features.  When you need help,~n"
 				       "anytime at the command line please press '?'.~n"
 				       "~n"
@@ -30,7 +30,7 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Config_help_cmd),
 
     %% List all functions of this node
-    Config_list_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+    Config_list_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 			       %% Let main program list the commands of this node,
 			       cmd_list
 		       end,
@@ -42,7 +42,7 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Config_list_cmd),
 
     %% Display commandline history
-    Show_history_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+    Show_history_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 				%% Let main program display commandline history,
 				cmd_history
 			end,
@@ -54,8 +54,8 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Show_history_cmd), 
 
-    Exit_fun =  fun (VTY_PID, _SelectionList, _NumberList, _StrList) ->
-			vty_out(VTY_PID, "%% Exiting... ~n", []),
+    Exit_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+			vty_out(VTY, "%% Exiting... ~n", []),
 			cmd_exit
 		end,
 
@@ -66,18 +66,18 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Exit_cmd),
 
 
-    Write_file_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
+    Write_file_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
 			      [Filename] = StrList,
 			      Result = file:open(Filename, write),
 			      case Result of 
 				  {ok, IoDevice} ->
-				      vty_out(VTY_PID, "%% Writing nodes to file: ~s ~n", [Filename]),
+				      vty_out(VTY, "%% Writing nodes to file: ~s ~n", [Filename]),
 				      write_nodes({file, IoDevice}),
 				      file:close(IoDevice),
 				      cmd_success;
 				  {error, Reason} ->
-				      vty_out(VTY_PID, "~nFailed writing to file \"~s\" !!!!! ~n", [Filename]),
-				      vty_out(VTY_PID, "Error reason: ~s ~n", [Reason]),
+				      vty_out(VTY, "~nFailed writing to file \"~s\" !!!!! ~n", [Filename]),
+				      vty_out(VTY, "Error reason: ~s ~n", [Reason]),
 				      cmd_warning 
 			      end
 		      end,
@@ -91,9 +91,9 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Write_file_cmd),
 
 
-    Write_terminal_fun =  fun (VTY_PID, _SelectionList, _NumberList, _StrList) ->
-				  vty_out(VTY_PID, "%% Writing nodes... ~n"),
-				  write_nodes(VTY_PID),
+    Write_terminal_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+				  vty_out(VTY, "%% Writing nodes... ~n"),
+				  write_nodes(VTY),
 				  cmd_success
 			  end,
 
@@ -106,9 +106,9 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Write_terminal_cmd),
 
 
-    Echo_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
+    Echo_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
 			[Str] = StrList,
-			vty_out(VTY_PID, "%% ~p ~n",[Str]),
+			vty_out(VTY, "%% ~p ~n",[Str]),
 			cmd_success
 		end,
 
@@ -130,9 +130,9 @@ install_default(NodeID) ->
 	.
 
 install_all()->
-    Hostname_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
+    Hostname_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
 			    [Hostname] = StrList,
-			    vty_out(VTY_PID, "%% Set hostname: ~p~n", [Hostname]),
+			    vty_out(VTY, "%% Set hostname: ~p~n", [Hostname]),
 			    {cmd_hostname, Hostname}
 		    end,
 
@@ -142,7 +142,7 @@ install_all()->
 		 helpstr  = ["Set system's network name",
 			     "This system's network name"]},
 
-    Enable_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+    Enable_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 			  cmd_enable
 		  end,
 
@@ -150,7 +150,7 @@ install_all()->
 			  cmdstr  = ["enable"],
 			  helpstr = ["Enable command"]},
 
-    Disable_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+    Disable_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 			   cmd_disable
 		   end,
 
@@ -187,25 +187,25 @@ install_all()->
     sr_gsmnet:install(), 
     sr_demo:install(). % demo node is within gsmnet_node
 
-vty_out(VTY_PID, String) ->
-    vty_out(VTY_PID, String,[]).
+vty_out(VTY, String) ->
+    vty_out(VTY, String,[]).
 
-vty_out(VTY_PID, StringWithCR, List) ->
+vty_out(VTY, StringWithCR, List) ->
     %% Substitute all ?CR with ?CR ?LF for telnet
     FormattedStringWithCR = io_lib:format(StringWithCR, List),
-    case VTY_PID of
-	{vty, PID} ->
+    case VTY of
+	{vty, VTY_PID} ->
 	    FormattedStringWithCRLF = re:replace(FormattedStringWithCR,binary_to_list(<<?LF>>),binary_to_list(<<?CR>>) ++ binary_to_list(<<?LF>>),[global, {return, list}]), 
-	    PID ! {output, FormattedStringWithCRLF};
+	    VTY_PID ! {output, FormattedStringWithCRLF};
 	{file, IoDevice} ->
 	    file:write(IoDevice, FormattedStringWithCR)
     end.
 
-%% write_nodes(VTY_PID)->
+%% write_nodes(VTY)->
 %%     FirstNodeKey = ets:first(commandTable),
-%%     write_node(VTY_PID, FirstNodeKey).
+%%     write_node(VTY, FirstNodeKey).
 
-%% write_node(VTY_PID, NodeKey)->
+%% write_node(VTY, NodeKey)->
 %%     case NodeKey of 
 %% 	'$end_of_table' -> % last registered node already written
 %% 	    ok;
@@ -215,22 +215,22 @@ vty_out(VTY_PID, StringWithCR, List) ->
 %% 	    Write_command = Node#node.write_command,
 %% 	    case Write_command of
 %% 		undefined -> % nothing to write for this node
-%% 		    %% vty_out(VTY_PID,"Not writing node: ~p~n",[Node#node.nodeID]),
+%% 		    %% vty_out(VTY,"Not writing node: ~p~n",[Node#node.nodeID]),
 %% 		    ok;
 %% 		_ -> % execute the node's fun
-%% 		    %% vty_out(VTY_PID,"Writing node: ~p~n",[Node#node.nodeID]),
+%% 		    %% vty_out(VTY,"Writing node: ~p~n",[Node#node.nodeID]),
 %% 		    Write_fun = Node#node.write_command,
-%% 		    Write_fun(VTY_PID)
+%% 		    Write_fun(VTY)
 %% 	    end,
 %% 	    NextNodeKey = ets:next(commandTable,NodeKey),
-%% 	    write_node(VTY_PID, NextNodeKey)
+%% 	    write_node(VTY, NextNodeKey)
 %%     end.
 
-write_nodes(VTY_PID)->
+write_nodes(VTY)->
     FirstNodeKey = ets:first(commandTable),
-    write_node(VTY_PID, FirstNodeKey).
+    write_node(VTY, FirstNodeKey).
 
-write_node(VTY_PID, NodeKey)->
+write_node(VTY, NodeKey)->
     case NodeKey of 
 	'$end_of_table' -> % last registered node already written
 	    ok;
@@ -240,15 +240,15 @@ write_node(VTY_PID, NodeKey)->
 	    CommandListTableID = Node#node.commandListTableID,
 	    CommandListTable = ets:tab2list(CommandListTableID),
 	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),
-	    write_elements(VTY_PID, CommandListTable),
+	    write_elements(VTY, CommandListTable),
 	    NextNodeKey = ets:next(commandTable,NodeKey),
-	    write_node(VTY_PID, NextNodeKey)
+	    write_node(VTY, NextNodeKey)
     end.
 
-write_elements(_VTY_PID, [])->
+write_elements(_VTY, [])->
     ok;
 
-write_elements(VTY_PID, [Head|Tail])->
+write_elements(VTY, [Head|Tail])->
     {_NodeID, Command} = Head,
     case Command#command.basicwrite of
 	undefined -> % nothing to write for this element
@@ -257,7 +257,7 @@ write_elements(VTY_PID, [Head|Tail])->
 	_ -> % execute the elements's fun
 	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
 	    BasicWrite_fun = Command#command.basicwrite,
-	    BasicWrite_fun(VTY_PID)
+	    BasicWrite_fun(VTY)
     end,
     case Command#command.enhancedwrite of
 	undefined -> % nothing to write for this element
@@ -266,11 +266,11 @@ write_elements(VTY_PID, [Head|Tail])->
 	_ -> % execute the elements's fun
 	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
 	    CmdStrStrippedList = commandStringStrip(Command#command.cmdstr),
-	    vty_out(VTY_PID, "~s ", [string:join(CmdStrStrippedList," ")]),
+	    vty_out(VTY, "~s ", [string:join(CmdStrStrippedList," ")]),
 	    EnhancedWrite_fun = Command#command.enhancedwrite,
-	    EnhancedWrite_fun(VTY_PID)
+	    EnhancedWrite_fun(VTY)
     end,
-    write_elements(VTY_PID, Tail).
+    write_elements(VTY, Tail).
 
 commandStringStrip(List)->
     commandStringStrip(List, []).

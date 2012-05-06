@@ -27,9 +27,9 @@ initialize_gsmnet_data()->
 
 
 install()->    
-    Show_net_fun = fun (VTY_PID, _SelectionList, _NumberList, _StrList) ->
-			   %% NET = gsmnet_from_vty(VTY_PID),
-			   net_dump_vty(VTY_PID, gsmnet_table),
+    Show_net_fun = fun (VTY, _SelectionList, _NumberList, _StrList) ->
+			   %% NET = gsmnet_from_vty(VTY),
+			   net_dump_vty(VTY, gsmnet_table),
 			   cmd_success
 		   end,
 
@@ -39,23 +39,23 @@ install()->
 					 "Display information about a GSM NETWORK"]},
 
 
-    Show_bts_fun = fun (VTY_PID, _SelectionList, NumberList, _StrList) ->
+    Show_bts_fun = fun (VTY, _SelectionList, NumberList, _StrList) ->
 			   %%io:format("SelectionList: ~p~n",[SelectionList]),
 			   %%io:format("NumberList: ~p~n",[NumberList]),
 			   NumBTS = ets:lookup_element(gsmnet_table,num_bts, 2),
 			   case NumberList of 
 			       [BTS_NR] when BTS_NR > NumBTS-> 
 				   %% use the BTS number that the user has specified 
-				   sr_command:vty_out(VTY_PID, "%% can't find BTS '~p'~n", [BTS_NR]),
+				   sr_command:vty_out(VTY, "%% can't find BTS '~p'~n", [BTS_NR]),
 				   cmd_warning;
 			       [BTS_NR]  -> 
-				   dump_bts(VTY_PID,BTS_NR),
-				   %%bts_dump_vty(VTY_PID, gsm_bts_num(NET, BTS_NR)),
+				   dump_bts(VTY,BTS_NR),
+				   %%bts_dump_vty(VTY, gsm_bts_num(NET, BTS_NR)),
 				   cmd_success;
 			       [] ->
 				   %% print all BTS's
 				   %% dump_all(ets:lookup(NET, num_bts), gsm_bts_num(net, bts_nr)),
-				   dump_all_bts(VTY_PID),
+				   dump_all_bts(VTY),
 				   cmd_success
 			   end
 		   end,
@@ -66,7 +66,7 @@ install()->
 				       "Display information about a BTS", 
 				       "BTS number"]}, %% helpstr 
 
-    Show_trx_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Show_trx_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
 			   io:format("NumberList: ~w~n",[NumberList]),
 			   cmd_success end, %% dummy
 
@@ -77,7 +77,7 @@ install()->
 				       "BTS Number",
 				       "TRX Number"]},
 
-    Show_ts_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Show_ts_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
 			  io:format("NumberList: ~w~n",[NumberList]),
 			  cmd_success end, %% dummy
 
@@ -89,7 +89,7 @@ install()->
 				      "TRX Number",
 				      "Timeslot Number"]},
 
-    Show_lchan_fun = fun(_VTY_PID,_SelectionList, NumberList, _StrList)-> 
+    Show_lchan_fun = fun(_VTY,_SelectionList, NumberList, _StrList)-> 
 			     io:format("NumberList: ~w~n",[NumberList]),
 			     cmd_success end, %% dummy
 
@@ -102,7 +102,7 @@ install()->
 					"Timeslot Number",
 					?LCHAN_NR_STR]},
 
-    Show_lchan_summary_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Show_lchan_summary_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
 				     io:format("NumberList: ~w~n",[NumberList]),
 				     cmd_success end, %% dummy
 
@@ -116,7 +116,7 @@ install()->
 					       "Timeslot Number",
 					       ?LCHAN_NR_STR]},
 
-    Show_paging_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Show_paging_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
 			      io:format("NumberList: ~w~n",[NumberList]),
 			      cmd_success end, %% dummy
 
@@ -128,7 +128,7 @@ install()->
 
 
 
-    Cfg_net_fun = fun(_VTY_PID, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_net_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
 			  %% enter gsmnet_node
 			  {cmd_enter_node, gsmnet_node} 
 		  end,
@@ -137,7 +137,7 @@ install()->
 			    cmdstr  = ["network"],
 			    helpstr = [?NETWORK_STR]},
 
-    Cfg_net_ncc_fun = fun(_VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Cfg_net_ncc_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
 			      io:format("NumberList: ~w~n",[NumberList])
 		      end, %% dummy
 
@@ -148,15 +148,15 @@ install()->
 					   ?CODE_CMD_STR,
 					   "Network Country Code to use"]},
 
-    Cfg_net_name_short_fun =  fun(VTY_PID, _SelectionList, _NumberList, StrList)->
+    Cfg_net_name_short_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
 				      io:format("StrList ~w~n", [StrList]),
 				      [NameShort] = StrList,
 				      %%ets:insert(gsmnet_table, {name_short,  NameShort}),
-				      sr_command:vty_out(VTY_PID,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)])
+				      sr_command:vty_out(VTY,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)])
 			      end,
-    Cfg_net_name_short_basicwrite_fun = fun(VTY_PID) ->
+    Cfg_net_name_short_basicwrite_fun = fun(VTY) ->
 						NameShort = ets:lookup_element(gsmnet_table,name_short, 2),   
-						sr_command:vty_out(VTY_PID,  "short name ~s ~n", [NameShort]) 
+						sr_command:vty_out(VTY,  "short name ~s ~n", [NameShort]) 
 					end,
 
     Cfg_net_name_short_cmd = #command{funcname= Cfg_net_name_short_fun,
@@ -166,16 +166,16 @@ install()->
 						 ?NAME_STR],
 				      basicwrite = Cfg_net_name_short_basicwrite_fun},
 
-    Cfg_net_name_long_fun =  fun(VTY_PID, _SelectionList, _NumberList, StrList)->
+    Cfg_net_name_long_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
 				     io:format("StrList ~w~n", [StrList]),
 				     [NameLong] = StrList,
 				     %% ets:insert(gsmnet_table, {name_long,  NameLong}),
-				     sr_command:vty_out(VTY_PID,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)])
+				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)])
 			     end,
 
-    Cfg_net_name_long_enhancedwrite_fun = fun(VTY_PID) ->
+    Cfg_net_name_long_enhancedwrite_fun = fun(VTY) ->
 						  NameLong = ets:lookup_element(gsmnet_table,name_long, 2),   
-						  sr_command:vty_out(VTY_PID,  "~s ~n", [NameLong])  
+						  sr_command:vty_out(VTY,  "~s ~n", [NameLong])  
 					  end,
 
     Cfg_net_name_long_cmd = #command{funcname      = Cfg_net_name_long_fun,
@@ -185,13 +185,13 @@ install()->
 						      ?NAME_STR],
 				     enhancedwrite = Cfg_net_name_long_enhancedwrite_fun},
 
-    Cfg_trx_arfcn_fun = fun(_VTY_PID, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
+    Cfg_trx_arfcn_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
 
     Cfg_trx_arfcn_cmd = #command{funcname = Cfg_trx_arfcn_fun,
 				 cmdstr   =["arfcn", "<0-1024>"],
 				 helpstr  =["Set the ARFCN for this TRX"]},
 
-    Cfg_bts_lac_fun = fun(_VTY_PID, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
+    Cfg_bts_lac_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
 
     Cfg_bts_lac_cmd = #command{funcname= Cfg_bts_lac_fun,
 			       cmdstr  = ["location_area_code", "<0-65535>"],
@@ -199,11 +199,11 @@ install()->
 
 
 
-    Config_write_net_node_fun = fun(VTY_PID) ->
+    Config_write_net_node_fun = fun(VTY) ->
 					CountryCode = ets:lookup_element(gsmnet_table,country_code, 2),   
-					sr_command:vty_out(VTY_PID,  "network country code ~p ~n", [CountryCode]),  
+					sr_command:vty_out(VTY,  "network country code ~p ~n", [CountryCode]),  
 					NameShort = ets:lookup_element(gsmnet_table,name_short, 2),
-					sr_command:vty_out(VTY_PID,  "short name ~p~n", [NameShort])
+					sr_command:vty_out(VTY,  "short name ~p~n", [NameShort])
 				end,
 
     sr_telnet_registration:install_node(gsmnet_node, 
@@ -232,62 +232,62 @@ install()->
 
 
 
-dump_all_bts(VTY_PID)->
+dump_all_bts(VTY)->
     NumBTS = ets:lookup_element(gsmnet_table, num_bts, 2),
-    sr_command:vty_out(VTY_PID, "This is no real output!!!~n"),
-    dump_all_bts(VTY_PID,NumBTS, 0).
+    sr_command:vty_out(VTY, "This is no real output!!!~n"),
+    dump_all_bts(VTY,NumBTS, 0).
 
-dump_all_bts(VTY_PID,NumBTS, BTS_NR)->
+dump_all_bts(VTY,NumBTS, BTS_NR)->
     if 
 	BTS_NR < NumBTS ->
-	    dump_bts(VTY_PID,BTS_NR),
-	    dump_all_bts(VTY_PID, NumBTS, BTS_NR+1);
+	    dump_bts(VTY,BTS_NR),
+	    dump_all_bts(VTY, NumBTS, BTS_NR+1);
 	true -> ok
     end.
 
-dump_bts(VTY_PID,BTS_NR)->
-    sr_command:vty_out(VTY_PID, "BTS Number: ~p ", [BTS_NR]),
-    sr_command:vty_out(VTY_PID, "is active~n").
+dump_bts(VTY,BTS_NR)->
+    sr_command:vty_out(VTY, "BTS Number: ~p ", [BTS_NR]),
+    sr_command:vty_out(VTY, "is active~n").
 
-net_dump_vty(VTY_PID,  Gsmnet_table_name) ->	
+net_dump_vty(VTY,  Gsmnet_table_name) ->	
     CountryCode = ets:lookup_element(Gsmnet_table_name,country_code, 2),
     NetworkCode = ets:lookup_element(Gsmnet_table_name,network_code, 2),
     NumBTS = ets:lookup_element(Gsmnet_table_name,num_bts, 2),
-    sr_command:vty_out(VTY_PID,  "BSC is on Country Code ~p, Network Code ~p "++
+    sr_command:vty_out(VTY,  "BSC is on Country Code ~p, Network Code ~p "++
 			   "and has ~p BTS~n", [CountryCode, NetworkCode, NumBTS]),  
     NameLong = ets:lookup_element(Gsmnet_table_name,name_long, 2),
-    sr_command:vty_out(VTY_PID,  "  Long network name: ~p~n", [NameLong]),
+    sr_command:vty_out(VTY,  "  Long network name: ~p~n", [NameLong]),
     NameShort = ets:lookup_element(Gsmnet_table_name,name_short, 2),
-    sr_command:vty_out(VTY_PID,  "  Short network name: ~p~n", [NameShort]),	
+    sr_command:vty_out(VTY,  "  Short network name: ~p~n", [NameShort]),	
     AuthPolicy =  gsm_auth_policy_name(ets:lookup_element(Gsmnet_table_name,auth_policy, 2)),
-    sr_command:vty_out(VTY_PID,  "  Authentication policy: ~p~n", [AuthPolicy]),
+    sr_command:vty_out(VTY,  "  Authentication policy: ~p~n", [AuthPolicy]),
     RejectCause = ets:lookup_element(Gsmnet_table_name, reject_cause, 2),
-    sr_command:vty_out(VTY_PID,  "  Location updating reject cause: ~p~n", [RejectCause]),
+    sr_command:vty_out(VTY,  "  Location updating reject cause: ~p~n", [RejectCause]),
     A5Encryption =  ets:lookup_element(Gsmnet_table_name,a5_encryption, 2),
-    sr_command:vty_out(VTY_PID,  "  Encryption: A5/~p~n", [A5Encryption]),
+    sr_command:vty_out(VTY,  "  Encryption: A5/~p~n", [A5Encryption]),
     Neci = ets:lookup_element(Gsmnet_table_name, neci, 2),
-    sr_command:vty_out(VTY_PID,  "  NECI (TCH/H): ~p~n", [Neci]),
+    sr_command:vty_out(VTY,  "  NECI (TCH/H): ~p~n", [Neci]),
     PagAnyTCH = ets:lookup_element(Gsmnet_table_name, pag_amy_tch, 2),
-    sr_command:vty_out(VTY_PID,  "  Use TCH for Paging any: ~p~n", [PagAnyTCH]),
+    sr_command:vty_out(VTY,  "  Use TCH for Paging any: ~p~n", [PagAnyTCH]),
     RrlpMode = ets:lookup_element(Gsmnet_table_name, rrlp_mode, 2),
-    sr_command:vty_out(VTY_PID,  "  RRLP Mode: ~p~n", [RrlpMode]),
+    sr_command:vty_out(VTY,  "  RRLP Mode: ~p~n", [RrlpMode]),
     SendMMInfo = case ets:lookup_element(Gsmnet_table_name, send_mm_info, 2) of
 		     true -> "On";
 		     false -> "Off"
 		 end,
-    sr_command:vty_out(VTY_PID,  "  MM Info: ~p~n", [SendMMInfo]),
+    sr_command:vty_out(VTY,  "  MM Info: ~p~n", [SendMMInfo]),
     HandoverActive = case ets:lookup_element(Gsmnet_table_name, handover_active, 2) of
 			 true -> "On";
 			 false -> "Off"
 		     end,
-    sr_command:vty_out(VTY_PID,  "  Handover: ~p~n", [HandoverActive]),
+    sr_command:vty_out(VTY,  "  Handover: ~p~n", [HandoverActive]),
     ChannelLoad = network_chan_load(Gsmnet_table_name),
-    sr_command:vty_out(VTY_PID,  "  Current Channel Load: ~p~n", [ChannelLoad]),
+    sr_command:vty_out(VTY,  "  Current Channel Load: ~p~n", [ChannelLoad]),
     case ets:member(Gsmnet_table_name, msc_data) and ets:member(Gsmnet_table_name, msc_data_rf_ctrl) of
 	true ->
 	    Msc_data_table_ID = ets:lookup_element(Gsmnet_table_name, msc_data_table, 2),
 	    Msc_data_Rf_ctrl_Last_state_command = ets:lookup_element(Msc_data_table_ID, last_RF_command, 2),
-	    sr_command:vty_out(VTY_PID,  "  Last RF Command: ~p~n", [Msc_data_Rf_ctrl_Last_state_command]); 
+	    sr_command:vty_out(VTY,  "  Last RF Command: ~p~n", [Msc_data_Rf_ctrl_Last_state_command]); 
 	false ->
 	    true
     end.
@@ -299,14 +299,14 @@ gsm_auth_policy_name(A)-> % dummy
 network_chan_load(A)-> % dummy
     A. 
 
-%% gsmnet_from_vty(Vty_PID)->
-%%     case ets:lookup(commandTable,Vty_PID) of
+%% gsmnet_from_vty(VTY)->
+%%     case ets:lookup(commandTable,VTY) of
 %% 	[] -> 
 %% 	    Vty_TableID = ets:new(vty_table,[ordered_set]),
-%% 	    ets:insert(commandTable,{Vty_PID,Vty_TableID}),
+%% 	    ets:insert(commandTable,{VTY,Vty_TableID}),
 %% 	    Gsmnet_TableID = ets:new(gsmnetTable,[ordered_set]),
 %% 	    ets:insert(Vty_TableID,{gsmnet,Gsmnet_TableID});
-%% 	[{Vty_PID, Vty_TableID}]-> 
+%% 	[{VTY, Vty_TableID}]-> 
 %% 	    case ets:lookup(Vty_TableID,gsmnet) of
 %% 		[] -> 
 %% 		    Gsmnet_TableID = ets:new(gsmnetTable,[ordered_set]),

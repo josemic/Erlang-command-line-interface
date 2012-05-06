@@ -3,7 +3,7 @@
 -include("sr_command.hrl").
 
 install()->
-    Cfg_demo_fun = fun(_VTY_PID, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_demo_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
 			   %% enter demo_node
 			   {cmd_enter_node, demo_node} 
 		   end,
@@ -14,22 +14,22 @@ install()->
 
 
 %%% Really for test puroses only:
-    Show_number_fun = fun(VTY_PID, _SelectionList, NumberList, _StrList)-> 
+    Show_number_fun = fun(VTY, _SelectionList, NumberList, _StrList)-> 
 			      %% Selection list is not used here.
 
 			      io:format("NumberList: ~p~n",[NumberList]),
 			      case NumberList of 
 				  []-> 
 				      %% use the BTS number that the user has specified 
-				      sr_command:vty_out(VTY_PID, "%% no number was given~n", []),
+				      sr_command:vty_out(VTY, "%% no number was given~n", []),
 				      cmd_success;
 				  [Nr0]  -> 
 				      %% one number was given
-				      sr_command:vty_out(VTY_PID, "%% number 0: ~p was given'~n", [Nr0]),
+				      sr_command:vty_out(VTY, "%% number 0: ~p was given'~n", [Nr0]),
 				      cmd_success;
 				  [Nr0,Nr1] ->
 				      %% two numbers were given
-				      sr_command:vty_out(VTY_PID, "%% number 0: ~p and number 1: ~p were given~n", [Nr0, Nr1]),
+				      sr_command:vty_out(VTY, "%% number 0: ~p and number 1: ~p were given~n", [Nr0, Nr1]),
 				      cmd_success
 			      end
 		      end, 
@@ -74,14 +74,14 @@ install()->
 				     "Optional Number 1"]},
 
 %%% Really for demonstration puroses only:
-    Show_selection_fun = fun(VTY_PID, SelectionList, _NumberList, _StrList)-> 
+    Show_selection_fun = fun(VTY, SelectionList, _NumberList, _StrList)-> 
 				 %% Selection list is not used here.
 
 				 io:format("SelectionList: ~p~n",[SelectionList]),
 				 case SelectionList of 
 				     [Selection]  -> 
 					 %% one number was given
-					 sr_command:vty_out(VTY_PID, "%% Selection: ~p was given'~n", [Selection]),
+					 sr_command:vty_out(VTY, "%% Selection: ~p was given'~n", [Selection]),
 					 cmd_success
 				 end
 			 end, 

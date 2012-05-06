@@ -192,7 +192,7 @@ register_node(NodeID, NodePropperties)->
 	    ets:insert(commandTable, Node),
 	    
 	    %% Register end node
-	    Config_end_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+	    Config_end_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 				      cmd_end
 			      end,
 
