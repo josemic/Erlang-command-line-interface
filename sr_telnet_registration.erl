@@ -189,7 +189,26 @@ register_node(NodeID, NodePropperties)->
 			 configuration_level =NodePropperties#node_propperties.configuration_level,
 			 commandListTableID = NodeTableID, 
 			 nodeID = NodeID},
-	    ets:insert(commandTable, Node)
+	    ets:insert(commandTable, Node),
+	    
+	    %% Register end node
+	    Config_end_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
+				      cmd_end
+			      end,
+
+	    Config_end_cmd = 
+		#command{funcname = Config_end_fun,
+			 cmdstr   = ["end"],
+			 helpstr  = ["End current mode and change to enable mode."]},
+
+	    case NodeID of
+		enable_node ->
+		    ok; % Command not supported
+		view_node ->
+		    ok; % Command not supported
+		_ ->
+		    sr_telnet_registration:install_element([NodeID], Config_end_cmd)
+	    end
     end.
 
 register_element([], _NodeCommand) -> 

@@ -106,24 +106,6 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Write_terminal_cmd),
 
 
-    Config_end_fun =  fun (_VTY_PID, _SelectionList, _NumberList, _StrList) ->
-			      cmd_end
-		      end,
-
-    Config_end_cmd = 
-	#command{funcname = Config_end_fun,
-		 cmdstr   = ["end"],
-		 helpstr  = ["End current mode and change to enable mode."]},
-
-    case NodeID of
-	enable_node ->
-	    ok; % Command not supported
-	view_node ->
-	    ok; % Command not supported
-	_ ->
-	    sr_telnet_registration:install_element([NodeID], Config_end_cmd)
-    end,
-
     Echo_fun =  fun (VTY_PID, _SelectionList, _NumberList, StrList) ->
 			[Str] = StrList,
 			vty_out(VTY_PID, "%% ~p ~n",[Str]),
