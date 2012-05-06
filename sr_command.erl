@@ -130,17 +130,6 @@ install_default(NodeID) ->
 	.
 
 install_all()->
-    Hostname_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
-			    [Hostname] = StrList,
-			    vty_out(VTY, "%% Set hostname: ~p~n", [Hostname]),
-			    {cmd_hostname, Hostname}
-		    end,
-
-    Hostname_cmd = 
-	#command{funcname = Hostname_fun,
-		 cmdstr   = ["hostname", "WORD"],
-		 helpstr  = ["Set system's network name",
-			     "This system's network name"]},
 
     Enable_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 			  cmd_enable
@@ -167,23 +156,18 @@ install_all()->
 					#node_propperties{write_fun = undefined,
 							  exec_mode = user,
 							  configuration_level= undefined}),
-    sr_telnet_registration:install_node(config_node, 
-					#node_propperties{write_fun = undefined,
-							  exec_mode = privileged,
-							  configuration_level= "config"}),
 
     sr_command:install_default(enable_node),
     sr_command:install_default(view_node),
-    sr_command:install_default(config_node),
-
 
     sr_telnet_registration:install_element([enable_node], Disable_cmd),
     sr_telnet_registration:install_element([view_node], Enable_cmd),
-    sr_telnet_registration:install_element([config_node], Hostname_cmd),
 
 
 
-    %% Install the other nodes:	
+
+    %% Install the other nodes:
+    sr_config:install(),
     sr_gsmnet:install(), 
     sr_demo:install(). % demo node is within gsmnet_node
 

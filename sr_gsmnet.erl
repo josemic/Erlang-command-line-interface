@@ -214,7 +214,7 @@ install()->
     sr_command:install_default(gsmnet_node),
     initialize_gsmnet_data(),
     %% Enter gsmnet_node
-    sr_telnet_registration:install_element([enable_node, view_node], Cfg_net_cmd),
+    sr_telnet_registration:install_element([config_node], Cfg_net_cmd),
     sr_telnet_registration:install_element([gsmnet_node], Cfg_net_ncc_cmd),
     sr_telnet_registration:install_element([gsmnet_node], Cfg_net_name_short_cmd), 
     sr_telnet_registration:install_element([gsmnet_node], Cfg_net_name_long_cmd),
