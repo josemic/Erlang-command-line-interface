@@ -285,7 +285,8 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 				  cmd_end ->
 				      NewStatus1 = Status#status{
 						     configuration_path = queue:new(),
-						     node = enable_node};
+						     node = enable_node},
+				      cmd_success;
 				  cmd_exit ->
 				      case queue:is_empty(Status#status.configuration_path) of
 					  true ->
