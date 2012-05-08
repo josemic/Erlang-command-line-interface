@@ -220,7 +220,8 @@ write_node(VTY, NodeKey)->
 	    ok;
 	_ ->
 	    [Node] = ets:lookup(commandTable, NodeKey),
-	    %% io:format("Node: ~w~n",[Node]),
+	    io:format("Node: ~w~n",[Node]),
+	    vty_out(VTY,"! NodeID: ~s~n",[Node#node.nodeID]),
 	    CommandListTableID = Node#node.commandListTableID,
 	    CommandListTable = ets:tab2list(CommandListTableID),
 	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),

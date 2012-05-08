@@ -3,7 +3,7 @@
 -include("sr_command.hrl").
 
 initialize_gsmnet_data()->
-    ets:new(gsmnet_table,[ordered_set, named_table]),
+    ets:new(gsmnet_table,[ordered_set, named_table, public]),
     %% just dummy data!!!!
     ets:insert(gsmnet_table, {country_code, "Germany"}),
     ets:insert(gsmnet_table, {network_code, "00"}),
@@ -151,7 +151,7 @@ install()->
     Cfg_net_name_short_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
 				      io:format("StrList ~w~n", [StrList]),
 				      [NameShort] = StrList,
-				      %%ets:insert(gsmnet_table, {name_short,  NameShort}),
+				      ets:insert(gsmnet_table, {name_short,  NameShort}),
 				      sr_command:vty_out(VTY,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)])
 			      end,
     Cfg_net_name_short_basicwrite_fun = fun(VTY) ->
@@ -169,7 +169,7 @@ install()->
     Cfg_net_name_long_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
 				     io:format("StrList ~w~n", [StrList]),
 				     [NameLong] = StrList,
-				     %% ets:insert(gsmnet_table, {name_long,  NameLong}),
+				     ets:insert(gsmnet_table, {name_long,  NameLong}),
 				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)])
 			     end,
 

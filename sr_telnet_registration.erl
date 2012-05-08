@@ -23,7 +23,7 @@ install_element(NodeIDList, CommandRecord)->
 
 
 telnet_process()->
-    ets:new(commandTable,[ordered_set, named_table, {keypos, #node.nodeID}]),
+    ets:new(commandTable,[set, named_table, {keypos, #node.nodeID}]),
     telnet_process_loop().
 
 telnet_process_loop()->
