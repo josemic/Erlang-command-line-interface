@@ -138,7 +138,8 @@ install()->
 			    helpstr = [?NETWORK_STR]},
 
     Cfg_net_ncc_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
-			      io:format("NumberList: ~w~n",[NumberList])
+			      io:format("NumberList: ~w~n",[NumberList]),
+			      cmd_success
 		      end, %% dummy
 
     Cfg_net_ncc_cmd = #command{ funcname=Cfg_net_ncc_fun, 
@@ -152,7 +153,8 @@ install()->
 				      io:format("StrList ~w~n", [StrList]),
 				      [NameShort] = StrList,
 				      ets:insert(gsmnet_table, {name_short,  NameShort}),
-				      sr_command:vty_out(VTY,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)])
+				      sr_command:vty_out(VTY,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)]),
+				      cmd_success
 			      end,
     Cfg_net_name_short_basicwrite_fun = fun(VTY) ->
 						NameShort = ets:lookup_element(gsmnet_table,name_short, 2),   
@@ -170,7 +172,8 @@ install()->
 				     io:format("StrList ~w~n", [StrList]),
 				     [NameLong] = StrList,
 				     ets:insert(gsmnet_table, {name_long,  NameLong}),
-				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)])
+				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)]),
+			             cmd_success
 			     end,
 
     Cfg_net_name_long_enhancedwrite_fun = fun(VTY) ->
@@ -185,13 +188,15 @@ install()->
 						      ?NAME_STR],
 				     enhancedwrite = Cfg_net_name_long_enhancedwrite_fun},
 
-    Cfg_trx_arfcn_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
+    Cfg_trx_arfcn_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)->
+				cmd_success end,  %% dummy
 
     Cfg_trx_arfcn_cmd = #command{funcname = Cfg_trx_arfcn_fun,
 				 cmdstr   =["arfcn", "<0-1024>"],
 				 helpstr  =["Set the ARFCN for this TRX"]},
 
-    Cfg_bts_lac_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> true end,  %% dummy
+    Cfg_bts_lac_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
+			      cmd_success end,  %% dummy
 
     Cfg_bts_lac_cmd = #command{funcname= Cfg_bts_lac_fun,
 			       cmdstr  = ["location_area_code", "<0-65535>"],
