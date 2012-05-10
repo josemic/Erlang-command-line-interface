@@ -1,0 +1,8 @@
+! NodeID: enable_node
+! NodeID: view_node
+! NodeID: config_node
+! NodeID: demo_node
+! NodeID: gsmnet_node
+network
+short name GER 
+long name Germay-mobile 
