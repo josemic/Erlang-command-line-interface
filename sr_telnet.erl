@@ -29,8 +29,8 @@ server([PortAtom]) when is_atom(PortAtom)->
 %% Start of program
 server(PortNr)  when is_integer(PortNr) ->
     io:format("Listening on Port: ~p for telnet console~n~n",[PortNr]),
-    ets:new(terminal_data_table,[ordered_set, named_table, public]),
-    ets:insert(terminal_data_table, {hostname, "ErlangCLI"}),
+    ets:new(server_data_table,[ordered_set, named_table, public]),
+    ets:insert(server_data_table, {hostname, "ErlangCLI"}),
     sr_telnet_registration:start(),
     {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
     wait_connect(ListenSocket,0).
@@ -549,7 +549,7 @@ get_prompt(Status)->
 	get_exec_mode_prompt(Status).
 
 get_name_prompt()->
-    ets:lookup_element(terminal_data_table,hostname, 2).
+    ets:lookup_element(server_data_table,hostname, 2).
 
 get_configuration_level_prompt(Status)->
     case ets:lookup(commandTable, Status#status.node) of
