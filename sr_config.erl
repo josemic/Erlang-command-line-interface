@@ -16,8 +16,9 @@ install()->
 
     Hostname_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
 			    [Hostname] = StrList,
+			    ets:insert(terminal_data_table, {hostname,  Hostname}),
 			    sr_command:vty_out(VTY, "%% Set hostname: ~p~n", [Hostname]),
-			    {cmd_hostname, Hostname}
+			    cdmd_success
 		    end,
 
     Hostname_cmd = 

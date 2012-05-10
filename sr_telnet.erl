@@ -8,7 +8,6 @@
 
 						% state of the prompt:
 -record(status, {position = 0            ::integer(),   % curser position, 
-		 hostname ="ErlangCLI"   ::string(),
 		 configuration_path     ,% queue:new() set during initialization
 		 node = view_node        ::atom(),
 		 port = undefined        ::port(),
@@ -30,6 +29,8 @@ server([PortAtom]) when is_atom(PortAtom)->
 %% Start of program
 server(PortNr)  when is_integer(PortNr) ->
     io:format("Listening on Port: ~p for telnet console~n~n",[PortNr]),
+    ets:new(terminal_data_table,[ordered_set, named_table, public]),
+    ets:insert(terminal_data_table, {hostname, "ErlangCLI"}),
     sr_telnet_registration:start(),
     {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
     wait_connect(ListenSocket,0).
@@ -52,6 +53,7 @@ wait_connect(ListenSocket, Count) when is_port(ListenSocket),is_integer(Count)->
 %% 	    io:format("Backtrace ~p~n", [erlang:get_stacktrace()]),
 %% 	    {error,Error}
 %% end.
+
 
 get_request(Socket, Count)  when is_port(Socket),is_integer(Count) ->
     %% set default values for window size
@@ -306,11 +308,6 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 						     configuration_path = queue:in(Status#status.node, Status#status.configuration_path),
 						     node = NewNode},
 				      cmd_success;
-				  {cmd_hostname, Hostname} ->
-				      %% set the current hostname
-				      NewStatus1 = Status#status{
-						     hostname = Hostname},
-				      cmd_success;
 				  cmd_list ->
 				      %% list all commands on the screen
 				      CommandList = get_non_hidden_command_list(Status#status.node),
@@ -547,12 +544,12 @@ n_times(N, Value, Acc) when N >= 0,is_binary(Value), is_binary(Acc)->
     n_times(N-1, Value, <<Acc/binary,Value/binary>>).
 
 get_prompt(Status)->
-    get_name_prompt(Status)++
+    get_name_prompt()++
 	get_configuration_level_prompt(Status)++
 	get_exec_mode_prompt(Status).
 
-get_name_prompt(Status)->
-    Status#status.hostname.
+get_name_prompt()->
+    ets:lookup_element(terminal_data_table,hostname, 2).
 
 get_configuration_level_prompt(Status)->
     case ets:lookup(commandTable, Status#status.node) of
