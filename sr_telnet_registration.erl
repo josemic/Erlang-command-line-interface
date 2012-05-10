@@ -50,7 +50,7 @@ test_commandstring(NodeID, CommandlineString, Match_fun, FilterHidden)->
 		provide_hidden ->
 		    NonHiddenCommandList = CommandList
 	    end,
-	    io:format("Table for node: ~p:~n~p~n", [NodeID, NonHiddenCommandList]),
+	    %% io:format("Table for node: ~p:~n~p~n", [NodeID, NonHiddenCommandList]),
 	    Extract_Cmdstr_fun = fun(Command) ->
 					 #command{cmdstr = Cmdstr, helpstr = _Helpstr, funcname = _Funcname}=Command,
 					 Fun = create_parser_list(Cmdstr),
@@ -101,7 +101,7 @@ get_command_execution_list([], Acc) ->
 get_command_execution_list([Head|Tail], Acc) ->
     %% io:format("Head: ~p~n", [Head]),
     {_, State} = Head,
-    io:format("State: ~p~n", [State#state.command]),
+    %% io:format("State: ~p~n", [State#state.command]),
     get_command_execution_list(Tail, [{State#state.number_list ,State#state.selection_list, State#state.str_list, State#state.command}|Acc]).
 
 get_completion_list(CommandList) -> 
@@ -142,7 +142,7 @@ create_parser_list([Head|Tail], Start, Acc) -> % Start flags the first item to e
     MaybeWhitespaceAndNumber = sr_parser:pMaybe(WhitespaceAndNumber),
     Str = sr_parser:pStr(),       % e.g. password in "set PASSWORD"
     WhitespaceAndStr = sr_parser:pAnd([Whitespace, Str]),
-    io:format("Head: ~p~n", [Head]),
+    %% io:format("Head: ~p~n", [Head]),
     OptionalNumberGuardOpening = string:chr(Head, $[ ), 
     OptionalNumberGuardClosing = string:chr(Head, $] ), 
     MandatoryNumberGuardOpening = string:chr(Head, $< ), 

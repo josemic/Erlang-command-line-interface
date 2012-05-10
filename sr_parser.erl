@@ -169,9 +169,9 @@ match_str(State)->
 
 match_str(String, #state{input=[I|Is]}=State, Acc) when (I >= 33), (I =< 126) ->
     NewString = String ++ [I|""],
-    io:format("String: ~p~n",[NewString]),
+    %%io:format("String: ~p~n",[NewString]),
     NewState = State#state{input= Is},
-    io:format("State: ~w ~n", [NewState#state.input]), 
+    %%io:format("State: ~w ~n", [NewState#state.input]), 
     match_str(NewString, NewState, [I |Acc]);
 
 match_str(_String,  #state{input=[]}=State, []) ->
@@ -185,14 +185,14 @@ match_str(_String, State, []) ->
 match_str(String,  #state{input=[]}=State, Acc) ->   
     StrList = State#state.str_list,
     NewStrList =  StrList++[String],
-    io:format("NewStrList: ~p~n",[NewStrList]),
+    %%io:format("NewStrList: ~p~n",[NewStrList]),
     NewState = State#state {str_list = NewStrList, parsed = lists:reverse(Acc)},
     {ok, NewState};
 
 match_str(String,  State, Acc) ->   
     StrList = State#state.str_list,
     NewStrList = StrList++[String],
-    io:format("NewStrList: ~p~n",[NewStrList]),
+    %%io:format("NewStrList: ~p~n",[NewStrList]),
     NewState = State#state {str_list = NewStrList, parsed = lists:reverse(Acc)},
     {incomplete, NewState}.
 
@@ -210,7 +210,7 @@ pAnd(Parsers) ->
 
 all([], #state{input=[], parsed_list = Parsed_List}=State, Acc) ->
     NewState = State#state{parsed_list =  lists:reverse( Acc ) ++Parsed_List},
-    io:format("lists:reverse( Acc ) ~p~n",[lists:reverse( Acc )]),
+    %% io:format("lists:reverse( Acc ) ~p~n",[lists:reverse( Acc )]),
     {ok, NewState};
 
 all([], #state{parsed_list = Parsed_List}=State, Acc) ->

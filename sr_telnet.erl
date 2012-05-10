@@ -1,5 +1,5 @@
 -module(sr_telnet).
--export([server/1, s/0, wait_connect/2, get_request/2]).
+-export([server/1, server/2, s/0, wait_connect/2, get_request/2]).
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 
@@ -26,14 +26,37 @@ s()->
 server([PortAtom]) when is_atom(PortAtom)->
     server(list_to_integer(atom_to_list(PortAtom)));
 
+server([PortAtom, FilenameAtom]) when is_atom(PortAtom), is_atom(FilenameAtom)->
+    server(list_to_integer(atom_to_list(PortAtom)), atom_to_list(FilenameAtom));
+
 %% Start of program
 server(PortNr)  when is_integer(PortNr) ->
+    server(PortNr, "").
+
+server(PortNr, Filename) ->
     io:format("Listening on Port: ~p for telnet console~n~n",[PortNr]),
+    %% initialize server dara
     ets:new(server_data_table,[ordered_set, named_table, public]),
     ets:insert(server_data_table, {hostname, "ErlangCLI"}),
+    %% register nodes
     sr_telnet_registration:start(),
-    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
-    wait_connect(ListenSocket,0).
+    %% load configuration from file
+    if
+	Filename /= "" ->
+	    io:format("~nReading configuration file:\"~s\"~n",[Filename]),
+	    case sr_read_file:execute_file_commands(Filename) of
+		ok -> 
+		    io:format("Reading configuration successfull!!~n~n"),
+		    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
+		    wait_connect(ListenSocket,0);
+		{error, Error} ->
+		    io:format("Reading configuration file failed with error ~s~n~n",[Error])
+	    end;
+	true ->
+	    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
+	    wait_connect(ListenSocket,0)
+    end.
+
 
 wait_connect(ListenSocket, Count) when is_port(ListenSocket),is_integer(Count)->
     io:format("Wait connect: ~p~n",[Count]),

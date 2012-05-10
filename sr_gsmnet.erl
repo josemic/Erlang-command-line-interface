@@ -150,7 +150,7 @@ install()->
 					   "Network Country Code to use"]},
 
     Cfg_net_name_short_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
-				      io:format("StrList ~w~n", [StrList]),
+				      %%io:format("StrList ~w~n", [StrList]),
 				      [NameShort] = StrList,
 				      ets:insert(gsmnet_table, {name_short,  NameShort}),
 				      sr_command:vty_out(VTY,  "short network name ~p ~n", [ets:lookup_element(gsmnet_table,name_short, 2)]),
@@ -169,7 +169,7 @@ install()->
 				      basicwrite = Cfg_net_name_short_basicwrite_fun},
 
     Cfg_net_name_long_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
-				     io:format("StrList ~w~n", [StrList]),
+				     %%io:format("StrList ~w~n", [StrList]),
 				     [NameLong] = StrList,
 				     ets:insert(gsmnet_table, {name_long,  NameLong}),
 				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)]),
