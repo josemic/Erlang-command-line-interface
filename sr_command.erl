@@ -169,11 +169,11 @@ install_all()->
 
 
     sr_telnet_registration:install_node(enable_node, 
-					#node_propperties{write_fun = undefined,
+					#node_propperties{node_entry_fun = undefined,
 							  exec_mode = privileged,
 							  configuration_level = undefined}),
     sr_telnet_registration:install_node(view_node, 
-					#node_propperties{write_fun = undefined,
+					#node_propperties{node_entry_fun = undefined,
 							  exec_mode = user,
 							  configuration_level= undefined}),
 
@@ -205,31 +205,6 @@ vty_out(VTY, StringWithCR, List) ->
 	    file:write(IoDevice, FormattedStringWithCR)
     end.
 
-%% write_nodes(VTY)->
-%%     FirstNodeKey = ets:first(commandTable),
-%%     write_node(VTY, FirstNodeKey).
-
-%% write_node(VTY, NodeKey)->
-%%     case NodeKey of 
-%% 	'$end_of_table' -> % last registered node already written
-%% 	    ok;
-%% 	_ ->
-%% 	    [Node] = ets:lookup(commandTable, NodeKey),
-%% 	    io:format("Node: ~p~n",[Node]),
-%% 	    Write_command = Node#node.write_command,
-%% 	    case Write_command of
-%% 		undefined -> % nothing to write for this node
-%% 		    %% vty_out(VTY,"Not writing node: ~p~n",[Node#node.nodeID]),
-%% 		    ok;
-%% 		_ -> % execute the node's fun
-%% 		    %% vty_out(VTY,"Writing node: ~p~n",[Node#node.nodeID]),
-%% 		    Write_fun = Node#node.write_command,
-%% 		    Write_fun(VTY)
-%% 	    end,
-%% 	    NextNodeKey = ets:next(commandTable,NodeKey),
-%% 	    write_node(VTY, NextNodeKey)
-%%     end.
-
 write_nodes(VTY)->
     FirstNodeKey = ets:first(commandTable),
     write_node(VTY, FirstNodeKey).
@@ -242,6 +217,15 @@ write_node(VTY, NodeKey)->
 	    [Node] = ets:lookup(commandTable, NodeKey),
 	    io:format("Node: ~w~n",[Node]),
 	    vty_out(VTY,"! NodeID: ~s~n",[Node#node.nodeID]),
+ 	    case Node#node.node_entry_fun of
+ 		undefined -> % nothing to write for this node
+ 		    %% vty_out(VTY,"Not writing node: ~p~n",[Node#node.nodeID]),
+ 		    ok;
+ 		_ -> % execute the node's fun
+ 		    %% vty_out(VTY,"Writing node: ~p~n",[Node#node.nodeID]),
+ 		    Node_entry_write_fun = Node#node.node_entry_fun,
+ 		    Node_entry_write_fun(VTY)
+ 	    end,
 	    CommandListTableID = Node#node.commandListTableID,
 	    CommandListTable = ets:tab2list(CommandListTableID),
 	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),

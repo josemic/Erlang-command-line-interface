@@ -184,7 +184,7 @@ register_node(NodeID, NodePropperties)->
 	[] ->
 	    NodeTableID = ets:new(NodeID,[bag]),
 	    Node = #node{prompt=[],
-			 write_command =NodePropperties#node_propperties.write_fun,
+			 node_entry_fun =NodePropperties#node_propperties.node_entry_fun,
 			 exec_mode =NodePropperties#node_propperties.exec_mode,
 			 configuration_level =NodePropperties#node_propperties.configuration_level,
 			 commandListTableID = NodeTableID, 

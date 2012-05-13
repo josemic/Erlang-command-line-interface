@@ -7,7 +7,7 @@
 -define(SHOW_STR,  "Show running system information").
 
 -record(node_propperties, 
-	{write_fun           = undefined ::function(), % function or undefined
+	{node_entry_fun      = undefined ::function(), % function or undefined
 	 configuration_level = undefined ::string(),   % string or undefined
 	 exec_mode           = root      ::user | root}).
 

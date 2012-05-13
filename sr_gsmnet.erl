@@ -204,15 +204,16 @@ install()->
 
 
 
-    Config_write_net_node_fun = fun(VTY) ->
-					CountryCode = ets:lookup_element(gsmnet_table,country_code, 2),   
-					sr_command:vty_out(VTY,  "network country code ~p ~n", [CountryCode]),  
-					NameShort = ets:lookup_element(gsmnet_table,name_short, 2),
-					sr_command:vty_out(VTY,  "short name ~p~n", [NameShort])
+    Gsmnet_node_entry_fun = fun(VTY) ->
+					sr_command:vty_out(VTY,  "network~n")
+					%% CountryCode = ets:lookup_element(gsmnet_table,country_code, 2),   
+					%% sr_command:vty_out(VTY,  "network country code ~p ~n", [CountryCode]),  
+					%% NameShort = ets:lookup_element(gsmnet_table,name_short, 2),
+					%% sr_command:vty_out(VTY,  "short name ~p~n", [NameShort])
 				end,
 
     sr_telnet_registration:install_node(gsmnet_node, 
-					#node_propperties{write_fun = Config_write_net_node_fun,
+					#node_propperties{node_entry_fun = Gsmnet_node_entry_fun,
 							  exec_mode = privileged,
 							  configuration_level = "net"}),
 

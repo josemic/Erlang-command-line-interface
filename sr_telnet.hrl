@@ -10,7 +10,7 @@
 	       }).
 
 -record(node,   {prompt=[],     
-		 write_command           ::function(),
+		 node_entry_fun          ::function(),
 		 commandListTableID = [] ::[atom()],
 		 nodeID=[]               ::atom(),
 		 exec_mode               ::user | root,

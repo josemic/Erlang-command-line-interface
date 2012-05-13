@@ -96,7 +96,7 @@ install()->
 
 
     sr_telnet_registration:install_node(demo_node, 
-					#node_propperties{write_fun = undefined,
+					#node_propperties{node_entry_fun = undefined,
 							  exec_mode = privileged,
 							  configuration_level = "demo"}),
 
