@@ -1,5 +1,5 @@
 -module(sr_telnet).
--export([server/1, server/2, s/0, wait_connect/2, get_request/2]).
+-export([server/1, server/2, s/0, wait_connect/2, get_request/2, print_process/1]).
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 
@@ -17,7 +17,8 @@
 		 history_depth = 100     ::integer(),
 		 interface = undefined   ::string(),
 		 window_height   = 24    ::integer,  % Default value, in case no Window size negotiation occurs
-		 window_width    = 80    ::integer   % Default value, in case no Window size negotiation occurs 
+		 window_width    = 80    ::integer,   % Default value, in case no Window size negotiation occurs 
+		 print_process           :: pid()     % set during initialization
 		}).
 
 s()->
@@ -45,7 +46,7 @@ server(PortNr, Filename) ->
     if
 	Filename /= "" ->
 	    io:format("~nReading configuration file:\"~s\"~n",[Filename]),
-	    case sr_read_file:execute_file_commands(Filename) of
+	    case sr_read_file:execute_file_commands(vty_direct, Filename) of
 		ok -> 
 		    io:format("Reading configuration successfull!!~n~n"),
 		    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
@@ -79,11 +80,26 @@ wait_connect(ListenSocket, Count) when is_port(ListenSocket),is_integer(Count)->
 %% end.
 
 
+
+print_process(Socket)->
+    receive	
+	{output, List} when is_list(List) ->
+	    gen_tcp:send(Socket, List),
+	    print_process(Socket);
+	{'EXIT',_PID, normal} ->
+	    ok;
+	Other ->
+	    io:format("Received message, this should not occur!!! ~p", [Other]),
+	    print_process(Socket)
+    end.
+
 get_request(Socket, Count)  when is_port(Socket),is_integer(Count) ->
+    PrintProcessPID = spawn_link(?MODULE, print_process, [Socket]), 
     %% set default values for window size
     %% set curser position in prompt
     Status = #status{configuration_path = queue:new(),
-		     history_buffer = queue_new() }, 
+		     history_buffer = queue_new(),
+		     print_process = PrintProcessPID}, 
     gen_tcp:send(Socket, <<?IAC, ?WILL, ?ECHO>>),
     gen_tcp:send(Socket, <<?IAC, ?WILL, ?SUPPRESS_GO_AHEAD>>),
     gen_tcp:send(Socket, <<?IAC, ?DONT, ?LINE_MODE>>),
@@ -297,7 +313,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		     io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
 		     Command_fun = Command#command.funcname,
 		     %% Execute the fun 
-		     Result = case Command_fun({vty, self()}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index}) of
+		     Result = case Command_fun({vty, Status#status.print_process}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index}) of
 				  cmd_warning ->
 				      gen_tcp:send(Socket,<<?BEL>>),
 				      NewStatus1 = Status,
@@ -335,7 +351,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 						     configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
 						     node = NewNode,
 						     index = Status#status.index},
-io:format("Index: ~p~n",[Status#status.index]),
+				      io:format("Index: ~p~n",[Status#status.index]),
 				      cmd_success;
 				  {cmd_enter_node, NewNode, NewIndex} ->
 				      %% put current node in the configuration path queue
@@ -368,12 +384,14 @@ io:format("Index: ~p~n",[Status#status.index]),
 				      NewStatus1 = Status,
 				      cmd_unknown
 
-			      end,	
+			      end,
+		     %% make sure the output from the fun comes before the prompt below.
+		     timer:sleep(10), 
 		     case Result of
 			 cmd_exit ->
 			     exit; 
 			 cmd_success ->
-			     receive_output(Socket), % receive characters for 100 ms
+			     %% receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,
@@ -387,7 +405,7 @@ io:format("Index: ~p~n",[Status#status.index]),
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
 
 			 cmd_warning ->
-			     receive_output(Socket), % receive characters for 100 ms
+			     %% receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,
@@ -402,7 +420,7 @@ io:format("Index: ~p~n",[Status#status.index]),
 			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
 			 _ ->
-			     receive_output(Socket), % receive characters for 100 ms
+			     %%receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,

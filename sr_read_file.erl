@@ -1,5 +1,5 @@
 -module(sr_read_file).
--export([execute_file_commands/1]).
+-export([execute_file_commands/2]).
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 -record(exe_status, {configuration_path     ,% queue:new() set during initialization
@@ -8,10 +8,10 @@
 		     line_number =0            ::integer()
 		    }).
 
-execute_file_commands(File) ->
+execute_file_commands(VTY, File) ->
     case file:open(File, [read]) of
 	{ok, IoDevice} ->
-	    Result = execute_file_command(IoDevice),
+	    Result = execute_file_command(VTY, IoDevice),
 	    file:close(IoDevice),
 	    Result;
 
@@ -19,25 +19,25 @@ execute_file_commands(File) ->
 	    Error
     end.
 
-execute_file_command(IoDevice) ->
+execute_file_command(VTY, IoDevice) ->
     Exe_status = #exe_status{configuration_path = queue:new()},
-    execute_file_command(IoDevice,  Exe_status).
+    execute_file_command(VTY, IoDevice,  Exe_status).
 
-execute_file_command(IoDevice, Exe_status) ->
+execute_file_command(VTY, IoDevice, Exe_status) ->
     NewExe_status = Exe_status#exe_status{line_number = Exe_status#exe_status.line_number +1},
     case file:read_line(IoDevice) of
 	{ok,CommandWithCRLF} ->
 	    Command = string:strip(stripCRLF(CommandWithCRLF)),
 	    case string:left(Command,1) of
 		"!" ->  % comment line, ignore
-		    execute_file_command(IoDevice, NewExe_status);
+		    execute_file_command(VTY, IoDevice, NewExe_status);
 		" " -> % empty line, ignore
-		    execute_file_command(IoDevice, NewExe_status);
+		    execute_file_command(VTY, IoDevice, NewExe_status);
 		_Other -> % command
-		    Result = evaluate_command(Command, NewExe_status),
+		    Result = evaluate_command(VTY, Command, NewExe_status),
 		    case Result of
 			{ok,NewResultExe_status} ->
-			    execute_file_command(IoDevice, NewResultExe_status);
+			    execute_file_command(VTY, IoDevice, NewResultExe_status);
 			{error,Error}  ->
 			    {error,Error}
 		    end
@@ -63,7 +63,7 @@ stripCRLF([], Acc)->
 stripCRLF([Head|Tail], Acc) ->
     stripCRLF(Tail, [Head|Acc]).
 
-evaluate_command(CommandStr, Exe_status) ->
+evaluate_command(VTY, CommandStr, Exe_status) ->
     %% io:format("Execute: ~s~n",[CommandStr]),
     Ok_fun = fun(X)->case X of {ok, _State} -> true;_-> false end end,
     Matchlist = sr_telnet_registration:test_commandstring(Exe_status#exe_status.node, CommandStr, Ok_fun, provide_hidden),
@@ -83,7 +83,7 @@ evaluate_command(CommandStr, Exe_status) ->
 				      configuration_path = ConfigurationPath,
 				      node = Node, 
 				      index = Index},
-		    evaluate_command(CommandStr, NewExe_status)
+		    evaluate_command(VTY, CommandStr, NewExe_status)
 	    end;
 	%% exactly one matching command, thus execute the command with the parameters
 	1 ->     MatchList = ordsets:to_list(Set_of_Matching_Commands), 
@@ -92,7 +92,7 @@ evaluate_command(CommandStr, Exe_status) ->
 		 %% io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
 		 Command_fun = Command#command.funcname,
 		 %% Execute the fun 
-		 case Command_fun({vty, self()}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Exe_status#exe_status.index}) of
+		 case Command_fun(VTY, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Exe_status#exe_status.index}) of
 		     cmd_warning ->
 			 NewExe_status = Exe_status,
 			 io:format("Warning occured by command ~s !!!!~n: ",[Command]),

@@ -54,18 +54,6 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Show_history_cmd), 
 
-    Exit_fun =  fun (VTY, _Command_param) ->
-			vty_out(VTY, "%% Exiting... ~n", []),
-			cmd_exit
-		end,
-
-    Exit_cmd = #command{funcname= Exit_fun,
-			cmdstr  = ["exit"],
-			helpstr = ["Exit command"]},
-
-    sr_telnet_registration:install_element([NodeID], Exit_cmd),
-
-
     Write_file_fun =  fun (VTY, Command_param) ->
 			      [Filename] = Command_param#command_param.str_list,
 			      Result = file:open(Filename, write),
@@ -93,15 +81,15 @@ install_default(NodeID) ->
     Read_file_fun =  fun (VTY, Command_param) ->
 			     [Filename] = Command_param#command_param.str_list,
 			     io:format("~nReading configuration file:\"~s\"~n",[Filename]),
-			     case sr_read_file:execute_file_commands(Filename) of
+			     case sr_read_file:execute_file_commands(VTY, Filename) of
 				 ok -> 
 				     vty_out(VTY, "Reading configuration successfull!!~n~n"),
 				     cmd_success;
 				 {error, Error} ->
-				      vty_out(VTY, "Failed with error: ~s~n~n",[Error]),
+				     vty_out(VTY, "Failed with error: ~s~n~n",[Error]),
 				     cmd_warning
 			     end
-			 end,
+		     end,
 
     Read_file_cmd = 
 	#command{funcname = Read_file_fun,
@@ -201,6 +189,8 @@ vty_out(VTY, StringWithCR, List) ->
 	{vty, VTY_PID} ->
 	    FormattedStringWithCRLF = re:replace(FormattedStringWithCR,binary_to_list(<<?LF>>),binary_to_list(<<?CR>>) ++ binary_to_list(<<?LF>>),[global, {return, list}]), 
 	    VTY_PID ! {output, FormattedStringWithCRLF};
+	vty_direct ->
+	    io:format(FormattedStringWithCR);
 	{file, IoDevice} ->
 	    file:write(IoDevice, FormattedStringWithCR)
     end.

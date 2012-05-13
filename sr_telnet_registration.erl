@@ -190,8 +190,22 @@ register_node(NodeID, NodePropperties)->
 			 commandListTableID = NodeTableID, 
 			 nodeID = NodeID},
 	    ets:insert(commandTable, Node),
-	    
-	    %% Register end node
+
+	    %% Register exit command
+
+	    Exit_fun =  fun (VTY, _Command_param) ->
+				sr_command:vty_out(VTY, "%% Exiting... ~n", []),
+				cmd_exit
+			end,
+
+	    Exit_cmd = #command{funcname= Exit_fun,
+				cmdstr  = ["exit"],
+				helpstr = ["Exit command"]},
+
+	    sr_telnet_registration:install_element([NodeID], Exit_cmd),
+
+
+	    %% Register end command
 	    Config_end_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
 				      cmd_end
 			      end,
