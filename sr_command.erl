@@ -90,6 +90,26 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Write_file_cmd),
 
+    Read_file_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
+			     [Filename] = StrList,
+			     io:format("~nReading configuration file:\"~s\"~n",[Filename]),
+			     case sr_read_file:execute_file_commands(Filename) of
+				 ok -> 
+				     vty_out(VTY, "Reading configuration successfull!!~n~n"),
+				     cmd_success;
+				 {error, Error} ->
+				      vty_out(VTY, "Failed with error: ~s~n~n",[Error]),
+				     cmd_warning
+			     end
+			 end,
+
+    Read_file_cmd = 
+	#command{funcname = Read_file_fun,
+		 cmdstr   = ["read","file", "FILENAME"],
+		 helpstr  = ["Read configuration.",
+			     "Read configuration from file"]},
+
+    sr_telnet_registration:install_element([NodeID], Read_file_cmd),
 
     Write_terminal_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
 				  vty_out(VTY, "%% Writing nodes... ~n"),

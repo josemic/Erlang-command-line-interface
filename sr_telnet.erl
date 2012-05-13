@@ -50,7 +50,7 @@ server(PortNr, Filename) ->
 		    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),
 		    wait_connect(ListenSocket,0);
 		{error, Error} ->
-		    io:format("Reading configuration file failed with error ~s~n~n",[Error])
+		    io:format("Failed with error: ~s~n~n",[Error])
 	    end;
 	true ->
 	    {ok, ListenSocket} = gen_tcp:listen(PortNr, [binary, {active, false}, {reuseaddr,true}]),

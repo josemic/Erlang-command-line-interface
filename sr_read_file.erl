@@ -3,7 +3,8 @@
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 -record(exe_status, {configuration_path     ,% queue:new() set during initialization
- 		     node = config_node        ::atom()
+ 		     node = config_node        ::atom(),
+		     line_number =0            ::integer()
 		    }).
 
 execute_file_commands(File) ->
@@ -22,19 +23,20 @@ execute_file_command(IoDevice) ->
     execute_file_command(IoDevice,  Exe_status).
 
 execute_file_command(IoDevice, Exe_status) ->
+   NewExe_status = Exe_status#exe_status{line_number = Exe_status#exe_status.line_number +1},
     case file:read_line(IoDevice) of
 	{ok,CommandWithCRLF} ->
 	    Command = string:strip(stripCRLF(CommandWithCRLF)),
 	    case string:left(Command,1) of
 		"!" ->  % comment line, ignore
-		    execute_file_command(IoDevice, Exe_status);
+		    execute_file_command(IoDevice, NewExe_status);
 		" " -> % empty line, ignore
-		    execute_file_command(IoDevice, Exe_status);
+		    execute_file_command(IoDevice, NewExe_status);
 		_Other -> % command
-		    Result = evaluate_command(Command, Exe_status),
+		    Result = evaluate_command(Command, NewExe_status),
 		    case Result of
-			{ok,NewExe_status} ->
-			    execute_file_command(IoDevice, NewExe_status);
+			{ok,NewResultExe_status} ->
+			    execute_file_command(IoDevice, NewResultExe_status);
 			{error,Error}  ->
 			    {error,Error}
 		    end
@@ -72,7 +74,7 @@ evaluate_command(CommandStr, Exe_status) ->
 	0 ->      
 	    case queue:is_empty(Exe_status#exe_status.configuration_path) of
 		true ->
-		    {error, queue_empty}; % Exit the program
+		    {error, "'Unknown command': \"" ++ CommandStr ++"\"" ++ "at line:" ++ integer_to_list(Exe_status#exe_status.line_number)}; % Exit the program
 		false ->
 		    %% get the last node from the queue
 		    {{value,Node}, ConfigurationPath} = queue:out_r(Exe_status#exe_status.configuration_path),
@@ -103,7 +105,7 @@ evaluate_command(CommandStr, Exe_status) ->
 			 NewExe_status = Exe_status,
 			 {ok,NewExe_status};
 		     Other -> 
-			 {error, Other}
+			 {error, "Command \"" ++ CommandStr ++ "\" exited at line " ++ integer_to_list(Exe_status#exe_status.line_number) ++ " with: " ++ atom_to_list(Other)}
 
 		 end;	
 	%% multiple matching commands, this is an error to register more than one command matching at the same time. 
