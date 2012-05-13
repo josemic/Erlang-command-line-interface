@@ -350,7 +350,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 				  cmd_success ->
 				      NewStatus1 = Status,
 				      cmd_success;
-				  _ -> 
+				  _ ->
 				      NewStatus1 = Status,
 				      cmd_unknown
 
@@ -358,7 +358,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		     case Result of
 			 cmd_exit ->
 			     exit; 
-			 _ ->
+			 cmd_success ->
 			     receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
@@ -368,6 +368,37 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
 					  history_index = 0,
 					  position = 0},	
+			     gen_tcp:send(Socket,get_prompt(NewStatus)),
+			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
+			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
+
+			 cmd_warning ->
+			     receive_output(Socket), % receive characters for 100 ms
+			     gen_tcp:send(Socket,<<?CR>>),
+			     gen_tcp:send(Socket,<<?LF>>),
+			     NewAcc = <<"">>,
+			     %% put entered command into histroy buffer
+			     NewStatus =NewStatus1#status{
+					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
+					  history_index = 0,
+					  position = 0},
+			     gen_tcp:send(Socket,<<"Warning error!!!", ?CR, ?LF>>),
+			     gen_tcp:send(Socket,<<"Be arware of what you are doing !!!", ?BEL, ?CR, ?LF>>),	
+			     gen_tcp:send(Socket,get_prompt(NewStatus)),
+			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
+			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
+			 _ ->
+			     receive_output(Socket), % receive characters for 100 ms
+			     gen_tcp:send(Socket,<<?CR>>),
+			     gen_tcp:send(Socket,<<?LF>>),
+			     NewAcc = <<"">>,
+			     %% put entered command into histroy buffer
+			     NewStatus =NewStatus1#status{
+					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
+					  history_index = 0,
+					  position = 0},
+			     gen_tcp:send(Socket,<<"Implementation error!!!", ?CR, ?LF>>),
+			     gen_tcp:send(Socket,<<"Invald command exit command. This should not occurr !!!", ?BEL, ?CR, ?LF>>),	
 			     gen_tcp:send(Socket,get_prompt(NewStatus)),
 			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket)
