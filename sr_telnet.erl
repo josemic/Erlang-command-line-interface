@@ -139,9 +139,6 @@ do_recv(Socket, Status, CommandBufferBin) when is_port(Socket), is_record(Status
 	    io:format("Socket error ~p: ~p~n", [Socket, Reason]),
 	    gen_tcp:close(Socket),
 	    {error, {telnet, Reason}};
-	{output, List} when is_list(List) ->
-	    gen_tcp:send(Socket, List),
-	    do_recv(Socket, Status, CommandBufferBin);
 	{'EXIT',_PID, normal} ->
 	    do_recv(Socket, Status, CommandBufferBin);
 	Other ->
@@ -391,7 +388,6 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 			 cmd_exit ->
 			     exit; 
 			 cmd_success ->
-			     %% receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,
@@ -405,7 +401,6 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
 
 			 cmd_warning ->
-			     %% receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,
@@ -420,7 +415,6 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
 			 _ ->
-			     %%receive_output(Socket), % receive characters for 100 ms
 			     gen_tcp:send(Socket,<<?CR>>),
 			     gen_tcp:send(Socket,<<?LF>>),
 			     NewAcc = <<"">>,
