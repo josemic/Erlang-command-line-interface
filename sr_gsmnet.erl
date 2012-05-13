@@ -27,7 +27,7 @@ initialize_gsmnet_data()->
 
 
 install()->    
-    Show_net_fun = fun (VTY, _SelectionList, _NumberList, _StrList) ->
+    Show_net_fun = fun (VTY, _Command_param) ->
 			   %% NET = gsmnet_from_vty(VTY),
 			   net_dump_vty(VTY, gsmnet_table),
 			   cmd_success
@@ -39,10 +39,11 @@ install()->
 					 "Display information about a GSM NETWORK"]},
 
 
-    Show_bts_fun = fun (VTY, _SelectionList, NumberList, _StrList) ->
+    Show_bts_fun = fun (VTY, Command_param) ->
 			   %%io:format("SelectionList: ~p~n",[SelectionList]),
 			   %%io:format("NumberList: ~p~n",[NumberList]),
-			   NumBTS = ets:lookup_element(gsmnet_table,num_bts, 2),
+			   NumberList = Command_param#command_param.number_list,
+                           NumBTS = ets:lookup_element(gsmnet_table,num_bts, 2),
 			   case NumberList of 
 			       [BTS_NR] when BTS_NR > NumBTS-> 
 				   %% use the BTS number that the user has specified 
@@ -66,7 +67,8 @@ install()->
 				       "Display information about a BTS", 
 				       "BTS number"]}, %% helpstr 
 
-    Show_trx_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
+    Show_trx_fun = fun(_VTY, Command_param)-> 
+                           NumberList = Command_param#command_param.number_list,
 			   io:format("NumberList: ~w~n",[NumberList]),
 			   cmd_success end, %% dummy
 
@@ -77,7 +79,8 @@ install()->
 				       "BTS Number",
 				       "TRX Number"]},
 
-    Show_ts_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
+    Show_ts_fun = fun(_VTY, Command_param)-> 
+		          NumberList = Command_param#command_param.number_list,
 			  io:format("NumberList: ~w~n",[NumberList]),
 			  cmd_success end, %% dummy
 
@@ -89,7 +92,8 @@ install()->
 				      "TRX Number",
 				      "Timeslot Number"]},
 
-    Show_lchan_fun = fun(_VTY,_SelectionList, NumberList, _StrList)-> 
+    Show_lchan_fun = fun(_VTY, Command_param)->NumberList = 
+                             Command_param#command_param.number_list,
 			     io:format("NumberList: ~w~n",[NumberList]),
 			     cmd_success end, %% dummy
 
@@ -102,7 +106,8 @@ install()->
 					"Timeslot Number",
 					?LCHAN_NR_STR]},
 
-    Show_lchan_summary_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
+    Show_lchan_summary_fun = fun(_VTY, Command_param)->
+				     NumberList = Command_param#command_param.number_list,
 				     io:format("NumberList: ~w~n",[NumberList]),
 				     cmd_success end, %% dummy
 
@@ -116,7 +121,8 @@ install()->
 					       "Timeslot Number",
 					       ?LCHAN_NR_STR]},
 
-    Show_paging_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
+    Show_paging_fun = fun(_VTY, Command_param)-> 
+                              NumberList = Command_param#command_param.number_list,
 			      io:format("NumberList: ~w~n",[NumberList]),
 			      cmd_success end, %% dummy
 
@@ -128,7 +134,7 @@ install()->
 
 
 
-    Cfg_net_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_net_fun = fun(_VTY, _Command_param)-> 
 			  %% enter gsmnet_node
 			  {cmd_enter_node, gsmnet_node} 
 		  end,
@@ -137,7 +143,8 @@ install()->
 			    cmdstr  = ["network"],
 			    helpstr = [?NETWORK_STR]},
 
-    Cfg_net_ncc_fun = fun(_VTY, _SelectionList, NumberList, _StrList)-> 
+    Cfg_net_ncc_fun = fun(_VTY, Command_param)->
+			      NumberList = Command_param#command_param.number_list,
 			      io:format("NumberList: ~w~n",[NumberList]),
 			      cmd_success
 		      end, %% dummy
@@ -149,7 +156,8 @@ install()->
 					   ?CODE_CMD_STR,
 					   "Network Country Code to use"]},
 
-    Cfg_net_name_short_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
+    Cfg_net_name_short_fun =  fun(VTY, Command_param)->
+				      StrList = Command_param#command_param.str_list,
 				      %%io:format("StrList ~w~n", [StrList]),
 				      [NameShort] = StrList,
 				      ets:insert(gsmnet_table, {name_short,  NameShort}),
@@ -168,9 +176,9 @@ install()->
 						 ?NAME_STR],
 				      basicwrite = Cfg_net_name_short_basicwrite_fun},
 
-    Cfg_net_name_long_fun =  fun(VTY, _SelectionList, _NumberList, StrList)->
+    Cfg_net_name_long_fun =  fun(VTY, Command_param)->
 				     %%io:format("StrList ~w~n", [StrList]),
-				     [NameLong] = StrList,
+				     [NameLong] = Command_param#command_param.str_list,
 				     ets:insert(gsmnet_table, {name_long,  NameLong}),
 				     sr_command:vty_out(VTY,  "long network name ~p ~n", [ets:lookup_element(gsmnet_table,name_long, 2)]),
 			             cmd_success
@@ -188,7 +196,7 @@ install()->
 						      ?NAME_STR],
 				     enhancedwrite = Cfg_net_name_long_enhancedwrite_fun},
 
-    Cfg_trx_arfcn_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)->
+    Cfg_trx_arfcn_fun = fun(_VTY, _Command_param)->
 				cmd_success end,  %% dummy
 
     Cfg_trx_arfcn_cmd = #command{funcname = Cfg_trx_arfcn_fun,

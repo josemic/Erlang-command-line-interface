@@ -4,7 +4,7 @@
 
 install()->
 
-    Cfg_config_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_config_fun = fun(_VTY, _Command_param)-> 
 			   %% enter config_node
 			   {cmd_enter_node, config_node} 
 		   end,
@@ -14,8 +14,8 @@ install()->
 			     helpstr = ["Configuration from vty interface", 
 					"Configuration terminal"]},
 
-    Hostname_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
-			    [Hostname] = StrList,
+    Hostname_fun =  fun (VTY, Command_param) ->
+			    [Hostname] = Command_param#command_param.str_list,
 			    ets:insert(server_data_table, {hostname,  Hostname}),
 			    sr_command:vty_out(VTY, "%% Set hostname: ~p~n", [Hostname]),
 			    cdmd_success

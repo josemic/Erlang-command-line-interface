@@ -10,6 +10,7 @@
 -record(status, {position = 0            ::integer(),   % curser position, 
 		 configuration_path     ,% queue:new() set during initialization
 		 node = view_node        ::atom(),
+		 index= []               ::[[integer()]],
 		 port = undefined        ::port(),
 		 history_buffer          ,% queue:new() set during initialization
 		 history_index = 0       ::integer(),
@@ -296,7 +297,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		     io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
 		     Command_fun = Command#command.funcname,
 		     %% Execute the fun 
-		     Result = case Command_fun({vty, self()}, SelectionList, NumberList, StrList) of
+		     Result = case Command_fun({vty, self()}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index}) of
 				  cmd_warning ->
 				      gen_tcp:send(Socket,<<?BEL>>),
 				      NewStatus1 = Status,
@@ -310,7 +311,8 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 				  cmd_end ->
 				      NewStatus1 = Status#status{
 						     configuration_path = queue:new(),
-						     node = enable_node},
+						     node = enable_node, 
+						     index = []},
 				      cmd_success;
 				  cmd_exit ->
 				      case queue:is_empty(Status#status.configuration_path) of
@@ -319,17 +321,29 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 					      cmd_exit; % Exit the program
 					  false ->
 					      %% get the last node from the queue
-					      {{value,Node}, ConfigurationPath} = queue:out_r(Status#status.configuration_path),
+					      {{value,{Node, Index}}, ConfigurationPath} = queue:out_r(Status#status.configuration_path),
 					      NewStatus1 = Status#status{
 							     configuration_path = ConfigurationPath,
-							     node = Node},
+							     node = Node,
+							     index = Index},
+					      io:format("Index: ~p~n",[Index]),
 					      cmd_success
 				      end;
 				  {cmd_enter_node, NewNode} ->
 				      %% put current node in the configuration path queue
 				      NewStatus1 = Status#status{
-						     configuration_path = queue:in(Status#status.node, Status#status.configuration_path),
-						     node = NewNode},
+						     configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
+						     node = NewNode,
+						     index = Status#status.index},
+io:format("Index: ~p~n",[Status#status.index]),
+				      cmd_success;
+				  {cmd_enter_node, NewNode, NewIndex} ->
+				      %% put current node in the configuration path queue
+				      NewStatus1 = Status#status{
+						     configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
+						     node = NewNode,
+						     index = [NewIndex|Status#status.index]},
+				      io:format("Index: ~p~n",[NewStatus1#status.index]),
 				      cmd_success;
 				  cmd_list ->
 				      %% list all commands on the screen

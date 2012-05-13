@@ -4,6 +4,7 @@
 -include("sr_telnet.hrl").
 -record(exe_status, {configuration_path     ,% queue:new() set during initialization
  		     node = config_node        ::atom(),
+		     index = []                ::[[integer()]],
 		     line_number =0            ::integer()
 		    }).
 
@@ -23,7 +24,7 @@ execute_file_command(IoDevice) ->
     execute_file_command(IoDevice,  Exe_status).
 
 execute_file_command(IoDevice, Exe_status) ->
-   NewExe_status = Exe_status#exe_status{line_number = Exe_status#exe_status.line_number +1},
+    NewExe_status = Exe_status#exe_status{line_number = Exe_status#exe_status.line_number +1},
     case file:read_line(IoDevice) of
 	{ok,CommandWithCRLF} ->
 	    Command = string:strip(stripCRLF(CommandWithCRLF)),
@@ -77,10 +78,11 @@ evaluate_command(CommandStr, Exe_status) ->
 		    {error, "'Unknown command': \"" ++ CommandStr ++"\"" ++ "at line:" ++ integer_to_list(Exe_status#exe_status.line_number)}; % Exit the program
 		false ->
 		    %% get the last node from the queue
-		    {{value,Node}, ConfigurationPath} = queue:out_r(Exe_status#exe_status.configuration_path),
+		    {{value,{Node, Index}}, ConfigurationPath} = queue:out_r(Exe_status#exe_status.configuration_path),
 		    NewExe_status = Exe_status#exe_status{
 				      configuration_path = ConfigurationPath,
-				      node = Node},
+				      node = Node, 
+				      index = Index},
 		    evaluate_command(CommandStr, NewExe_status)
 	    end;
 	%% exactly one matching command, thus execute the command with the parameters
@@ -90,16 +92,24 @@ evaluate_command(CommandStr, Exe_status) ->
 		 %% io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
 		 Command_fun = Command#command.funcname,
 		 %% Execute the fun 
-		 case Command_fun({vty, self()}, SelectionList, NumberList, StrList) of
+		 case Command_fun({vty, self()}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Exe_status#exe_status.index}) of
 		     cmd_warning ->
-			 NewExe_Status = Exe_status,
+			 NewExe_status = Exe_status,
 			 io:format("Warning occured by command ~s !!!!~n: ",[Command]),
-			 {ok,NewExe_Status};
+			 {ok,NewExe_status};
 		     {cmd_enter_node, NewNode} ->
 			 %% put current node in the configuration path queue
 			 NewExe_status = Exe_status#exe_status{
-					   configuration_path = queue:in(Exe_status#exe_status.node, Exe_status#exe_status.configuration_path),
-					   node = NewNode},
+					   configuration_path = queue:in({Exe_status#exe_status.node, Exe_status#exe_status.index }, Exe_status#exe_status.configuration_path),
+					   node = NewNode,
+					   index = Exe_status#exe_status.index},
+			 {ok,NewExe_status};
+		     {cmd_enter_node, NewNode, NewIndex} ->
+			 %% put current node in the configuration path queue
+			 NewExe_status = Exe_status#exe_status{
+					   configuration_path = queue:in({Exe_status#exe_status.node, Exe_status#exe_status.index }, Exe_status#exe_status.configuration_path),
+					   node = NewNode,
+					   index = [NewIndex|Exe_status#exe_status.index]},
 			 {ok,NewExe_status};
 		     cmd_success ->
 			 NewExe_status = Exe_status,

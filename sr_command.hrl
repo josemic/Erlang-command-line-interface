@@ -17,4 +17,11 @@
 		  basicwrite = undefined         ::function(),  % function or undefined
 		  enhancedwrite = undefined      ::function(),  % function or undefined
 		  hidden        = undefined      ::yes | no     % yes, no or undefined   
-}).
+		 }).
+
+-record(command_param, 
+	{selection_list                  ::[string()],
+	 number_list                     ::[integer()],
+	 str_list                        ::[string()],
+	 index_list                      ::[[integer()]]
+	}).

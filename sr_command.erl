@@ -6,7 +6,7 @@
 
 install_default(NodeID) ->
     %% Help display function for all node.
-    Config_help_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+    Config_help_fun =  fun (VTY, _Command_param) ->
 			       vty_out(VTY,
 				       "This VTY provides advanced help features.  When you need help,~n"
 				       "anytime at the command line please press '?'.~n"
@@ -30,7 +30,7 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Config_help_cmd),
 
     %% List all functions of this node
-    Config_list_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
+    Config_list_fun =  fun (_VTY, _Command_param) ->
 			       %% Let main program list the commands of this node,
 			       cmd_list
 		       end,
@@ -42,7 +42,7 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Config_list_cmd),
 
     %% Display commandline history
-    Show_history_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
+    Show_history_fun =  fun (_VTY, _Command_param) ->
 				%% Let main program display commandline history,
 				cmd_history
 			end,
@@ -54,7 +54,7 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Show_history_cmd), 
 
-    Exit_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+    Exit_fun =  fun (VTY, _Command_param) ->
 			vty_out(VTY, "%% Exiting... ~n", []),
 			cmd_exit
 		end,
@@ -66,8 +66,8 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Exit_cmd),
 
 
-    Write_file_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
-			      [Filename] = StrList,
+    Write_file_fun =  fun (VTY, Command_param) ->
+			      [Filename] = Command_param#command_param.str_list,
 			      Result = file:open(Filename, write),
 			      case Result of 
 				  {ok, IoDevice} ->
@@ -90,8 +90,8 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Write_file_cmd),
 
-    Read_file_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
-			     [Filename] = StrList,
+    Read_file_fun =  fun (VTY, Command_param) ->
+			     [Filename] = Command_param#command_param.str_list,
 			     io:format("~nReading configuration file:\"~s\"~n",[Filename]),
 			     case sr_read_file:execute_file_commands(Filename) of
 				 ok -> 
@@ -111,7 +111,7 @@ install_default(NodeID) ->
 
     sr_telnet_registration:install_element([NodeID], Read_file_cmd),
 
-    Write_terminal_fun =  fun (VTY, _SelectionList, _NumberList, _StrList) ->
+    Write_terminal_fun =  fun (VTY, _Command_param) ->
 				  vty_out(VTY, "%% Writing nodes... ~n"),
 				  write_nodes(VTY),
 				  cmd_success
@@ -126,8 +126,8 @@ install_default(NodeID) ->
     sr_telnet_registration:install_element([NodeID], Write_terminal_cmd),
 
 
-    Echo_fun =  fun (VTY, _SelectionList, _NumberList, StrList) ->
-			[Str] = StrList,
+    Echo_fun =  fun (VTY, Command_param) ->
+			[Str] = Command_param#command_param.str_list,
 			vty_out(VTY, "%% ~p ~n",[Str]),
 			cmd_success
 		end,
@@ -151,7 +151,7 @@ install_default(NodeID) ->
 
 install_all()->
 
-    Enable_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
+    Enable_fun =  fun (_VTY, _Command_param) ->
 			  cmd_enable
 		  end,
 
@@ -159,7 +159,7 @@ install_all()->
 			  cmdstr  = ["enable"],
 			  helpstr = ["Enable command"]},
 
-    Disable_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
+    Disable_fun =  fun (_VTY, _Command_param) ->
 			   cmd_disable
 		   end,
 

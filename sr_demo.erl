@@ -3,7 +3,7 @@
 -include("sr_command.hrl").
 
 install()->
-    Cfg_demo_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_demo_fun = fun(_VTY, _Command_param)-> 
 			   %% enter demo_node
 			   {cmd_enter_node, demo_node} 
 		   end,
@@ -14,9 +14,9 @@ install()->
 
 
 %%% Really for test puroses only:
-    Show_number_fun = fun(VTY, _SelectionList, NumberList, _StrList)-> 
+    Show_number_fun = fun(VTY, Command_param)-> 
 			      %% Selection list is not used here.
-
+			      NumberList = Command_param#command_param.number_list,
 			      io:format("NumberList: ~p~n",[NumberList]),
 			      case NumberList of 
 				  []-> 
@@ -74,9 +74,9 @@ install()->
 				     "Optional Number 1"]},
 
 %%% Really for demonstration puroses only:
-    Show_selection_fun = fun(VTY, SelectionList, _NumberList, _StrList)-> 
+    Show_selection_fun = fun(VTY, Command_param)-> 
 				 %% Selection list is not used here.
-
+                                 SelectionList = Command_param#command_param.selection_list,
 				 io:format("SelectionList: ~p~n",[SelectionList]),
 				 case SelectionList of 
 				     [Selection]  -> 
