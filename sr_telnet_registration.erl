@@ -187,6 +187,7 @@ register_node(NodeID, NodePropperties)->
 			 node_entry_fun =NodePropperties#node_propperties.node_entry_fun,
 			 exec_mode =NodePropperties#node_propperties.exec_mode,
 			 configuration_level =NodePropperties#node_propperties.configuration_level,
+			 indention_level =NodePropperties#node_propperties.indention_level,
 			 commandListTableID = NodeTableID, 
 			 nodeID = NodeID},
 	    ets:insert(commandTable, Node),

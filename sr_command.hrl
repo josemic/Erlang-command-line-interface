@@ -7,9 +7,10 @@
 -define(SHOW_STR,  "Show running system information").
 
 -record(node_propperties, 
-	{node_entry_fun      = undefined ::function(), % function or undefined
-	 configuration_level = undefined ::string(),   % string or undefined
-	 exec_mode           = root      ::user | root}).
+	{node_entry_fun       = undefined ::function(), % function or undefined
+	 configuration_level  = undefined ::string(),   % string or undefined
+	 indention_level      = 0         ::integer(),
+	 exec_mode            = root      ::user | root}).
 
 -record(command, {funcname                       ::function(),
 		  cmdstr                         ::[string()],

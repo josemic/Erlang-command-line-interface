@@ -223,6 +223,7 @@ install()->
     sr_telnet_registration:install_node(gsmnet_node, 
 					#node_propperties{node_entry_fun = Gsmnet_node_entry_fun,
 							  exec_mode = privileged,
+							  indention_level =2,
 							  configuration_level = "net"}),
 
     sr_command:install_default(gsmnet_node),

@@ -72,7 +72,7 @@ install_default(NodeID) ->
 
     Write_file_cmd = 
 	#command{funcname = Write_file_fun,
-		 cmdstr   = ["write","file", "FILENAME"],
+		 cmdstr   = ["write", "file", "FILENAME"],
 		 helpstr  = ["Write running configuration to memory, network, or terminal",
 			     "Write to configuration file"]},
 
@@ -207,27 +207,29 @@ write_node(VTY, NodeKey)->
 	    [Node] = ets:lookup(commandTable, NodeKey),
 	    io:format("Node: ~w~n",[Node]),
 	    vty_out(VTY,"! NodeID: ~s~n",[Node#node.nodeID]),
+            Indention_level = Node#node.indention_level,
  	    case Node#node.node_entry_fun of
  		undefined -> % nothing to write for this node
  		    %% vty_out(VTY,"Not writing node: ~p~n",[Node#node.nodeID]),
  		    ok;
  		_ -> % execute the node's fun
  		    %% vty_out(VTY,"Writing node: ~p~n",[Node#node.nodeID]),
+		    vty_out(VTY, "~s", [string:copies(" ", Indention_level)]),
  		    Node_entry_write_fun = Node#node.node_entry_fun,
  		    Node_entry_write_fun(VTY)
  	    end,
 	    CommandListTableID = Node#node.commandListTableID,
 	    CommandListTable = ets:tab2list(CommandListTableID),
 	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),
-	    write_elements(VTY, CommandListTable),
+	    write_elements(VTY, CommandListTable, Indention_level),
 	    NextNodeKey = ets:next(commandTable,NodeKey),
 	    write_node(VTY, NextNodeKey)
     end.
 
-write_elements(_VTY, [])->
+write_elements(_VTY, [], _Indention_level)->
     ok;
 
-write_elements(VTY, [Head|Tail])->
+write_elements(VTY, [Head|Tail], Indention_level)->
     {_NodeID, Command} = Head,
     case Command#command.basicwrite of
 	undefined -> % nothing to write for this element
@@ -235,6 +237,7 @@ write_elements(VTY, [Head|Tail])->
 	    ok;
 	_ -> % execute the elements's fun
 	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
+            vty_out(VTY, "~s", [string:copies(" ", Indention_level+1)]),
 	    BasicWrite_fun = Command#command.basicwrite,
 	    BasicWrite_fun(VTY)
     end,
@@ -244,12 +247,13 @@ write_elements(VTY, [Head|Tail])->
 	    ok;
 	_ -> % execute the elements's fun
 	    io:format("Writing command: ~p~n",[Command#command.cmdstr]),
+	    vty_out(VTY, "~s", [string:copies(" ", Indention_level+1)]),
 	    CmdStrStrippedList = commandStringStrip(Command#command.cmdstr),
 	    vty_out(VTY, "~s ", [string:join(CmdStrStrippedList," ")]),
 	    EnhancedWrite_fun = Command#command.enhancedwrite,
 	    EnhancedWrite_fun(VTY)
     end,
-    write_elements(VTY, Tail).
+    write_elements(VTY, Tail, Indention_level).
 
 commandStringStrip(List)->
     commandStringStrip(List, []).
