@@ -16,6 +16,7 @@
 		 history_index = 0       ::integer(),
 		 history_depth = 100     ::integer(),
 		 interface = undefined   ::string(),
+		 insertion_mode = insert ::insert|delete,
 		 window_height   = 24    ::integer,  % Default value, in case no Window size negotiation occurs
 		 window_width    = 80    ::integer,   % Default value, in case no Window size negotiation occurs 
 		 print_process           :: pid()     % set during initialization
@@ -444,6 +445,14 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		     navigate_in_buffer(Remain, Acc, Status#status{position = byte_size(Acc), history_index = 0}, Socket)
 	    end;
 
+	%% Insert-key 
+	<<"\e[2~", Remain/binary>> when Status#status.insertion_mode == insert ->
+	    navigate_in_buffer(Remain, Acc, Status#status{insertion_mode = delete}, Socket);
+
+	%% Insert-key
+	<<"\e[2~", Remain/binary>> when Status#status.insertion_mode == delete ->
+	    navigate_in_buffer(Remain, Acc, Status#status{insertion_mode = insert}, Socket);
+
 	%% Page-Up-key ignore
 	<<"\e[5~", Remain/binary>> ->
 	    navigate_in_buffer(Remain, Acc, Status#status{position = byte_size(Acc)}, Socket);
@@ -553,15 +562,15 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	    navigate_in_buffer(Remain, NewAcc, Status#status{position= Status#status.position+1}, Socket);
 
         %% overwrite mode
-	%% <<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position->
-	%%     gen_tcp:send(Socket,<<NewChar>>),
-	%%     SecondPart = binary:part(Acc, Status#status.position+1, byte_size(Acc)- (Status#status.position+1)),
-	%%     io:format("Second part: ~p~n",[SecondPart]),
-	%%     NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
-	%%     navigate_in_buffer(Remain, NewAcc, Status#status{position=Status#status.position+1}, Socket)
+	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position, Status#status.insertion_mode == delete ->
+	    gen_tcp:send(Socket,<<NewChar>>),
+	    SecondPart = binary:part(Acc, Status#status.position+1, byte_size(Acc)- (Status#status.position+1)),
+	    io:format("Second part: ~p~n",[SecondPart]),
+	    NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
+	    navigate_in_buffer(Remain, NewAcc, Status#status{position=Status#status.position+1}, Socket);
 
         %% insert mode
-	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position->
+	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position, Status#status.insertion_mode == insert->
 	    gen_tcp:send(Socket,<<NewChar>>),
 	    SecondPartLen = byte_size(Acc)- (Status#status.position),
 	    SecondPart = binary:part(Acc, Status#status.position, SecondPartLen),
