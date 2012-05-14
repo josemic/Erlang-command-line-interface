@@ -552,15 +552,26 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	    NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
 	    navigate_in_buffer(Remain, NewAcc, Status#status{position= Status#status.position+1}, Socket);
 
+        %% overwrite mode
+	%% <<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position->
+	%%     gen_tcp:send(Socket,<<NewChar>>),
+	%%     SecondPart = binary:part(Acc, Status#status.position+1, byte_size(Acc)- (Status#status.position+1)),
+	%%     io:format("Second part: ~p~n",[SecondPart]),
+	%%     NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
+	%%     navigate_in_buffer(Remain, NewAcc, Status#status{position=Status#status.position+1}, Socket)
+
+        %% insert mode
 	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position->
 	    gen_tcp:send(Socket,<<NewChar>>),
-	    SecondPart = binary:part(Acc, Status#status.position+1, byte_size(Acc)- (Status#status.position+1)),
+	    SecondPartLen = byte_size(Acc)- (Status#status.position),
+	    SecondPart = binary:part(Acc, Status#status.position, SecondPartLen),
+	    io:format("~p, ~p, ~p ~n",[SecondPart, Status#status.position+1, SecondPartLen]),
 	    io:format("Second part: ~p~n",[SecondPart]),
+	    gen_tcp:send(Socket,<<SecondPart/binary," ">>),
+	    gen_tcp:send(Socket,n_times((SecondPartLen+1), <<?BS>>)),
 	    NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
 	    navigate_in_buffer(Remain, NewAcc, Status#status{position=Status#status.position+1}, Socket)
     end.
-
-
 
 
 
