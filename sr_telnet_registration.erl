@@ -183,7 +183,7 @@ register_node(NodeID, NodePropperties)->
 	    io:format("Warning!! ~ninstall_node(~w, ...). ~p has already been registered. ~nCommand will be ignored. ~n", [NodeID, NodePropperties]);
 	[] ->
 	    NodeTableID = ets:new(NodeID,[bag]),
-	    Node = #node{prompt=[],
+	    Node = #node{
 			 node_entry_fun =NodePropperties#node_propperties.node_entry_fun,
 			 exec_mode =NodePropperties#node_propperties.exec_mode,
 			 configuration_level =NodePropperties#node_propperties.configuration_level,
