@@ -10,16 +10,16 @@
 	{node_entry_fun       = undefined ::function(), % function or undefined
 	 configuration_level  = undefined ::string(),   % string or undefined
 	 indention_level      = 0         ::integer(),
-	 alias_ref            = undefined ::atom(),
-	 alias_def            = undefined ::atom(),
 	 exec_mode            = root      ::user | root}).
 
 -record(command, {funcname                       ::function(),
 		  cmdstr                         ::[string()],
 		  helpstr                        ::[string()],
-		  basicwrite = undefined         ::function(),  % function or undefined
-		  enhancedwrite = undefined      ::function(),  % function or undefined
-		  hidden        = undefined      ::yes | no     % yes, no or undefined   
+		  basicwrite         = undefined ::function(),  % function or undefined
+		  enhancedwrite      = undefined ::function(),  % function or undefined
+	          alias_ref          = undefined ::atom(),
+	          alias_def          = undefined ::atom(),
+		  hidden             = undefined ::yes | no     % yes, no or undefined   
 		 }).
 
 -record(command_param, 

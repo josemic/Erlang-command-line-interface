@@ -14,8 +14,6 @@
 		 commandListTableID   =[]          ::[atom()],
 		 nodeID               =[]          ::atom(),
 		 exec_mode                         ::user | root,
-		 alias_ref            = undefined ::atom(),
-		 alias_def            = undefined ::atom(),
 		 configuration_level        ::string(),
 		 indention_level= 0         ::integer()
 		}).
