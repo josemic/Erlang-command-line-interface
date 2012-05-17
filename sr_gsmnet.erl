@@ -33,7 +33,8 @@ install()->
 			   cmd_success
 		   end,
 
-    Show_net_cmd =   #command{funcname= Show_net_fun, 
+    Show_net_cmd =   #command{alias_def=show_net_alias_def, 
+			      funcname= Show_net_fun, 
 			      cmdstr  = ["show","network"], 
 			      helpstr = [?SHOW_STR, 
 					 "Display information about a GSM NETWORK"]},

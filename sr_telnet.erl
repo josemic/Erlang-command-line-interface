@@ -306,130 +306,33 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		      end;
 		%% exactly one matching command, thus execute the command with the parameters
 		1 -> [{NumberList, SelectionList, StrList, Command}] = ordsets:to_list(Set_of_Matching_Commands),
+		     CommandParam = #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index},
 		     gen_tcp:send(Socket,<<?CR>>),
 		     gen_tcp:send(Socket,<<?LF>>),
-		     io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p~n",[Command, SelectionList, NumberList, StrList]),
-		     Command_fun = Command#command.funcname,
-		     %% Execute the fun 
-		     Result = case Command_fun({vty, Status#status.print_process}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index}) of
-				  cmd_warning ->
-				      gen_tcp:send(Socket,<<?BEL>>),
-				      NewStatus1 = Status,
-				      cmd_warning;
-				  cmd_enable ->
-				      NewStatus1 = Status#status{node = enable_node},
-				      cmd_success;	 
-				  cmd_disable ->
-				      NewStatus1 = Status#status{node = view_node},
-				      cmd_success;
-				  cmd_end ->
-				      NewStatus1 = Status#status{
-						     configuration_path = queue:new(),
-						     node = enable_node, 
-						     index = []},
-				      cmd_success;
-				  cmd_exit ->
-				      case queue:is_empty(Status#status.configuration_path) of
-					  true ->
-					      NewStatus1 = Status,
-					      cmd_exit; % Exit the program
-					  false ->
-					      %% get the last node from the queue
-					      {{value,{Node, Index}}, ConfigurationPath} = queue:out_r(Status#status.configuration_path),
-					      NewStatus1 = Status#status{
-							     configuration_path = ConfigurationPath,
-							     node = Node,
-							     index = Index},
-					      io:format("Index: ~p~n",[Index]),
-					      cmd_success
-				      end;
-				  {cmd_enter_node, NewNode} ->
-				      %% put current node in the configuration path queue
-				      NewStatus1 = Status#status{
-						     configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
-						     node = NewNode,
-						     index = Status#status.index},
-				      io:format("Index: ~p~n",[Status#status.index]),
-				      cmd_success;
-				  {cmd_enter_node, NewNode, NewIndex} ->
-				      %% put current node in the configuration path queue
-				      NewStatus1 = Status#status{
-						     configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
-						     node = NewNode,
-						     index = [NewIndex|Status#status.index]},
-				      io:format("Index: ~p~n",[NewStatus1#status.index]),
-				      cmd_success;
-				  cmd_list ->
-				      %% list all commands on the screen
-				      CommandList = get_non_hidden_command_list(Status#status.node),
-				      Fun = fun(A,B) -> A < B end,
-				      SortedCommandList = lists:sort(Fun, CommandList),
-				      print_list_to_telnet_console(Socket, SortedCommandList),
-						%print_command_list(Socket, Status#status.node),
-				      NewStatus1 = Status,
-				      cmd_success;
-				  cmd_history ->
-				      %% display commandline history on the screen
-				      CommandHistoryList = generate_commandline_history_list(Status#status.history_buffer),
-				      print_list_to_telnet_console(Socket, CommandHistoryList),
-						%print_commandline_history(Socket, Status#status.history_buffer),
-				      NewStatus1 = Status,
-				      cmd_success;
-				  cmd_success ->
-				      NewStatus1 = Status,
-				      cmd_success;
-				  _ ->
-				      NewStatus1 = Status,
-				      cmd_unknown
-
-			      end,
-		     %% make sure the output from the fun comes before the prompt below.
-		     timer:sleep(10), 
-		     case Result of
-			 cmd_exit ->
-			     exit; 
-			 cmd_success ->
-			     gen_tcp:send(Socket,<<?CR>>),
-			     gen_tcp:send(Socket,<<?LF>>),
+		     case resolve_optional_alias(Command) of 
+			 {warning, Warning} ->
+			     gen_tcp:send(Socket,list_to_binary(Warning)),
+			     gen_tcp:send(Socket,<<?CR, ?LF, ?CR, ?LF>>),
 			     NewAcc = <<"">>,
 			     %% put entered command into histroy buffer
-			     NewStatus =NewStatus1#status{
-					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
+			     NewStatus =Status#status{
+					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), Status#status.history_buffer, Status#status.history_depth), 
 					  history_index = 0,
 					  position = 0},	
 			     gen_tcp:send(Socket,get_prompt(NewStatus)),
 			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
 			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
-
-			 cmd_warning ->
-			     gen_tcp:send(Socket,<<?CR>>),
-			     gen_tcp:send(Socket,<<?LF>>),
-			     NewAcc = <<"">>,
-			     %% put entered command into histroy buffer
-			     NewStatus =NewStatus1#status{
-					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
-					  history_index = 0,
-					  position = 0},
-			     gen_tcp:send(Socket,<<"Warning error!!!", ?CR, ?LF>>),
-			     gen_tcp:send(Socket,<<"Be arware of what you are doing !!!", ?BEL, ?CR, ?LF>>),	
-			     gen_tcp:send(Socket,get_prompt(NewStatus)),
-			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
-			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket);
-			 _ ->
-			     gen_tcp:send(Socket,<<?CR>>),
-			     gen_tcp:send(Socket,<<?LF>>),
-			     NewAcc = <<"">>,
-			     %% put entered command into histroy buffer
-			     NewStatus =NewStatus1#status{
-					  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), NewStatus1#status.history_buffer, NewStatus1#status.history_depth), 
-					  history_index = 0,
-					  position = 0},
-			     gen_tcp:send(Socket,<<"Implementation error!!!", ?CR, ?LF>>),
-			     gen_tcp:send(Socket,<<"Invald command exit command. This should not occurr !!!", ?BEL, ?CR, ?LF>>),	
-			     gen_tcp:send(Socket,get_prompt(NewStatus)),
-			     gen_tcp:send(Socket,<<NewAcc/binary>>), 
-			     navigate_in_buffer(Remain, NewAcc, NewStatus, Socket)
+			 {command, ResolvedAliasCommand} ->
+			     {Result, NewStatus} = execute_command(ResolvedAliasCommand, CommandParam, Status, Socket),  
+			     Res = handle_execution_result(Socket, NewStatus, Result, Acc),
+			     case Res of
+				 exit ->
+				     exit;
+				 {continue, NewAcc1, NewStatus1} ->
+				     navigate_in_buffer(Remain, NewAcc1, NewStatus1, Socket)
+			     end
 		     end;
+
 		%% multiple matching commands, this is an error to register more than one command matching at the same time. 
 		%% Thus list the errorous commands.
 		_ -> io:format("Ambigous commands: ~p~n",[Acc]),
@@ -561,7 +464,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	    NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
 	    navigate_in_buffer(Remain, NewAcc, Status#status{position= Status#status.position+1}, Socket);
 
-        %% overwrite mode
+	%% overwrite mode
 	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position, Status#status.insertion_mode == delete ->
 	    gen_tcp:send(Socket,<<NewChar>>),
 	    SecondPart = binary:part(Acc, Status#status.position+1, byte_size(Acc)- (Status#status.position+1)),
@@ -569,7 +472,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	    NewAcc = <<(binary:part(Acc, 0, Status#status.position))/binary, NewChar, SecondPart/binary>>,
 	    navigate_in_buffer(Remain, NewAcc, Status#status{position=Status#status.position+1}, Socket);
 
-        %% insert mode
+	%% insert mode
 	<<NewChar, Remain/binary>> when  byte_size(Acc) > Status#status.position, Status#status.insertion_mode == insert->
 	    gen_tcp:send(Socket,<<NewChar>>),
 	    SecondPartLen = byte_size(Acc)- (Status#status.position),
@@ -789,3 +692,193 @@ print_list_to_telnet_console(Socket, [Head|Tail]) ->
     gen_tcp:send(Socket, <<?CR,?LF >>),
     print_list_to_telnet_console(Socket,Tail).
 
+
+
+resolve_optional_alias(Command)->
+    case Command#command.alias_ref of
+	undefined -> % alias is not used 
+	    {command, Command};
+
+	_Other -> % alias is used, find alias_ref
+	    case find_alias_def(Command#command.alias_ref) of
+		{alias_found,AliasRefCommand} -> % alias_ref was found
+		    {command, AliasRefCommand};
+		alias_not_found ->
+		    {warning, "Warning: alias_def not found!!!"}
+	    end
+    end.
+
+
+
+execute_command(Command, CommandParam, Status, Socket)->
+    SelectionList = CommandParam#command_param.selection_list, 
+    NumberList = CommandParam#command_param.number_list, 
+    StrList = CommandParam#command_param.str_list, 
+    Index = Status#status.index,
+    io:format("Command: ~p SelectionList: ~p NumberList: ~p StrList: ~p IndexList: ~p~n",[Command, CommandParam#command_param.selection_list, CommandParam#command_param.number_list, CommandParam#command_param.str_list, Status#status.index]),
+    Command_fun = Command#command.funcname,
+    %% Execute the fun 
+    Result = case Command_fun({vty, Status#status.print_process}, #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index}) of
+		 cmd_warning ->
+		     gen_tcp:send(Socket,<<?BEL>>),
+		     NewStatus1 = Status,
+		     cmd_warning;
+		 cmd_enable ->
+		     NewStatus1 = Status#status{node = enable_node},
+		     cmd_success;	 
+		 cmd_disable ->
+		     NewStatus1 = Status#status{node = view_node},
+		     cmd_success;
+		 cmd_end ->
+		     NewStatus1 = Status#status{
+				    configuration_path = queue:new(),
+				    node = enable_node, 
+				    index = []},
+		     cmd_success;
+		 cmd_exit ->
+		     case queue:is_empty(Status#status.configuration_path) of
+			 true ->
+			     NewStatus1 = Status,
+			     cmd_exit; % Exit the program
+			 false ->
+			     %% get the last node from the queue
+			     {{value,{Node, Index}}, ConfigurationPath} = queue:out_r(Status#status.configuration_path),
+			     NewStatus1 = Status#status{
+					    configuration_path = ConfigurationPath,
+					    node = Node,
+					    index = Index},
+			     io:format("Index: ~p~n",[Index]),
+			     cmd_success
+		     end;
+		 {cmd_enter_node, NewNode} ->
+		     %% put current node in the configuration path queue
+		     NewStatus1 = Status#status{
+				    configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
+				    node = NewNode,
+				    index = Status#status.index},
+		     io:format("Index: ~p~n",[Status#status.index]),
+		     cmd_success;
+		 {cmd_enter_node, NewNode, NewIndex} ->
+		     %% put current node in the configuration path queue
+		     NewStatus1 = Status#status{
+				    configuration_path = queue:in({Status#status.node, Status#status.index}, Status#status.configuration_path),
+				    node = NewNode,
+				    index = [NewIndex|Status#status.index]},
+		     io:format("Index: ~p~n",[NewStatus1#status.index]),
+		     cmd_success;
+		 cmd_list ->
+		     %% list all commands on the screen
+		     CommandList = get_non_hidden_command_list(Status#status.node),
+		     Fun = fun(A,B) -> A < B end,
+		     SortedCommandList = lists:sort(Fun, CommandList),
+		     print_list_to_telnet_console(Socket, SortedCommandList),
+						%print_command_list(Socket, Status#status.node),
+		     NewStatus1 = Status,
+		     cmd_success;
+		 cmd_history ->
+		     %% display commandline history on the screen
+		     CommandHistoryList = generate_commandline_history_list(Status#status.history_buffer),
+		     print_list_to_telnet_console(Socket, CommandHistoryList),
+						%print_commandline_history(Socket, Status#status.history_buffer),
+		     NewStatus1 = Status,
+		     cmd_success;
+		 cmd_success ->
+		     NewStatus1 = Status,
+		     cmd_success;
+		 _ ->
+		     NewStatus1 = Status,
+		     cmd_unknown
+
+	     end,
+    {Result, NewStatus1}.
+
+
+handle_execution_result(Socket, Status, Result, Acc) ->
+    %% make sure the output from the fun comes before the prompt below.
+    timer:sleep(10), 
+    case Result of
+	cmd_exit ->
+	    exit; 
+	cmd_success ->
+	    gen_tcp:send(Socket,<<?CR>>),
+	    gen_tcp:send(Socket,<<?LF>>),
+	    NewAcc = <<"">>,
+	    %% put entered command into histroy buffer
+	    NewStatus =Status#status{
+			 history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), Status#status.history_buffer, Status#status.history_depth), 
+			 history_index = 0,
+			 position = 0},	
+	    gen_tcp:send(Socket,get_prompt(NewStatus)),
+	    gen_tcp:send(Socket,<<NewAcc/binary>>), 
+	    {continue, NewAcc, NewStatus};
+
+	cmd_warning ->
+	    gen_tcp:send(Socket,<<?CR>>),
+	    gen_tcp:send(Socket,<<?LF>>),
+	    NewAcc = <<"">>,
+	    %% put entered command into histroy buffer
+	    NewStatus =Status#status{
+			 history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), Status#status.history_buffer, Status#status.history_depth), 
+			 history_index = 0,
+			 position = 0},
+	    gen_tcp:send(Socket,<<"Warning error!!!", ?CR, ?LF>>),
+	    gen_tcp:send(Socket,<<"Be arware of what you are doing !!!", ?BEL, ?CR, ?LF>>),	
+	    gen_tcp:send(Socket, get_prompt(NewStatus)),
+	    gen_tcp:send(Socket,<<NewAcc/binary>>),
+	    {continue, NewAcc, NewStatus};
+	_ ->
+	    gen_tcp:send(Socket,<<?CR>>),
+	    gen_tcp:send(Socket,<<?LF>>),
+	    NewAcc = <<"">>,
+	    %% put entered command into histroy buffer
+	    NewStatus = Status#status{
+			  history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), Status#status.history_buffer, Status#status.history_depth), 
+			  history_index = 0,
+			  position = 0},
+	    gen_tcp:send(Socket,<<"Implementation error!!!", ?CR, ?LF>>),
+	    gen_tcp:send(Socket,<<"Invald command exit command. This should not occurr !!!", ?BEL, ?CR, ?LF>>),	
+	    gen_tcp:send(Socket,get_prompt(NewStatus)),
+	    gen_tcp:send(Socket,<<NewAcc/binary>>), 
+	    {continue, NewAcc, NewStatus}
+    end.
+
+
+find_alias_def(Command_alias_def) ->
+    FirstNodeKey = ets:first(commandTable),
+    find_alias_def(Command_alias_def, FirstNodeKey).
+
+find_alias_def(Command_alias_def, NodeKey)->
+    case NodeKey of 
+	'$end_of_table' -> % last registered node already searched
+	    alias_not_found;
+	_ ->
+	    [Node] = ets:lookup(commandTable, NodeKey),
+	    io:format("Node: ~w~n",[Node]),
+	    CommandListTableID = Node#node.commandListTableID,
+	    CommandListTable = ets:tab2list(CommandListTableID),
+	    %% io:format("CommandListTable: ~p~n",[CommandListTable]),
+	    case find_alias_def_in_elements(Command_alias_def, CommandListTable) of
+		alias_not_found ->
+		    NextNodeKey = ets:next(commandTable,NodeKey),
+		    find_alias_def(Command_alias_def, NextNodeKey);
+		{alias_found, Command} ->
+		    {alias_found, Command}
+	    end
+    end.
+
+find_alias_def_in_elements(_Command_alias_def, [])->
+    alias_not_found;
+
+find_alias_def_in_elements(Command_alias_def, [Head|Tail])->
+    {_NodeID, Command} = Head,
+    case Command#command.alias_def of
+	undefined -> % ignore this element, as no alias_def defined for this node
+	    io:format("Element ignored, as alias_def not defined: ~p~n",[Command#command.cmdstr]),
+	    find_alias_def_in_elements(Command_alias_def, Tail);
+	Command_alias_def -> % alias found
+	    io:format("Alias element found: ~p~n",[Command#command.cmdstr]),
+	    {alias_found, Command};
+	_ -> % ignore this element, as no alias_def defined for this node
+	    io:format("Element ignored, as different alias_def : ~p~n",[Command#command.cmdstr]),
+	    find_alias_def_in_elements(Command_alias_def, Tail)
+    end.

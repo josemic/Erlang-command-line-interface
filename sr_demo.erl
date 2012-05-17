@@ -73,6 +73,10 @@ install()->
 				     "Mandatory Number 0", 
 				     "Optional Number 1"]},
 
+
+    
+
+
 %%% Really for demonstration puroses only:
     Show_selection_fun = fun(VTY, Command_param)-> 
 				 %% Selection list is not used here.
@@ -93,6 +97,10 @@ install()->
 					     "BTS Number: 0, 1 or 2}", 
 					     "selection"]},
 
+   Aliastest_cmd = #command{alias_ref= show_net_alias_def,
+			  cmdstr  = ["aliastest"],
+			  helpstr = ["Alias test"]},
+
 
 
     sr_telnet_registration:install_node(demo_node, 
@@ -110,5 +118,6 @@ install()->
     sr_telnet_registration:install_element([demo_node], Show_d_cmd),
     sr_telnet_registration:install_element([demo_node], Show_e_cmd),
     sr_telnet_registration:install_element([demo_node], Show_f_cmd),   
-    sr_telnet_registration:install_element([demo_node], Show_selection_cmd).
+    sr_telnet_registration:install_element([demo_node], Show_selection_cmd),
+    sr_telnet_registration:install_element([demo_node], Aliastest_cmd).
 

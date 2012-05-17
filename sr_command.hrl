@@ -12,7 +12,7 @@
 	 indention_level      = 0         ::integer(),
 	 exec_mode            = root      ::user | root}).
 
--record(command, {funcname                       ::function(),
+-record(command, {funcname           = undefined ::function(),
 		  cmdstr                         ::[string()],
 		  helpstr                        ::[string()],
 		  basicwrite         = undefined ::function(),  % function or undefined
