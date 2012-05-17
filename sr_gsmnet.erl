@@ -204,7 +204,7 @@ install()->
 				 cmdstr   =["arfcn", "<0-1024>"],
 				 helpstr  =["Set the ARFCN for this TRX"]},
 
-    Cfg_bts_lac_fun = fun(_VTY, _SelectionList, _NumberList, _StrList)-> 
+    Cfg_bts_lac_fun = fun(_VTY, _Command_param)-> 
 			      cmd_success end,  %% dummy
 
     Cfg_bts_lac_cmd = #command{funcname= Cfg_bts_lac_fun,

@@ -207,7 +207,7 @@ register_node(NodeID, NodePropperties)->
 
 
 	    %% Register end command
-	    Config_end_fun =  fun (_VTY, _SelectionList, _NumberList, _StrList) ->
+	    Config_end_fun =  fun (_VTY, _Command_param) ->
 				      cmd_end
 			      end,
 
