@@ -254,12 +254,15 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 	%% Return-key: Execute the command
 	<<?CR, Remain/binary>> ->
 	    io:format("Commandline buffer: '~p'~n",[Acc]),
+	    MappedCommandAbbreviated = sr_abbreviation_parser:test_commandstring_abbreviated(Status#status.node, string:strip(binary:bin_to_list(Acc))),
+	    MatchTrue_fun = fun(X)->case X of {true, _, _, _ , _ } -> true;_-> false end end,
+	    MatchlistCommandAbbreviated = lists:filter(MatchTrue_fun, MappedCommandAbbreviated),
 	    Ok_fun = fun(X)->case X of {ok, _State} -> true;_-> false end end,
 	    Matchlist = sr_telnet_registration:test_commandstring(Status#status.node, string:strip(binary:bin_to_list(Acc), right), Ok_fun, provide_hidden),
 	    io:format("Matchlist : ~p~n", [Matchlist]),
 	    Set_of_Matching_Commands = sr_telnet_registration:get_command_execution_list(Matchlist),
 	    io:format("Set_of_Matching_Commands : ~p~n", [Set_of_Matching_Commands]),
-	    case length(Set_of_Matching_Commands) of
+	    case length(MatchlistCommandAbbreviated) of
 		%% no matching commands, thus look at the failed commands and determine the longest failed command to put the indicator '^'
 		0 ->  Partially_fun = fun(X)->case X of {partially, _State} -> true;_-> false end end,
 		      PartiallyMatchlist = sr_telnet_registration:test_commandstring(Status#status.node, binary:bin_to_list(Acc), Partially_fun,provide_hidden),
@@ -305,7 +308,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 									     history_buffer = queue_element(binary:list_to_bin(string:strip(binary:bin_to_list(Acc))), Status#status.history_buffer, Status#status.history_depth) }, Socket)
 		      end;
 		%% exactly one matching command, thus execute the command with the parameters
-		1 -> [{NumberList, SelectionList, StrList, Command}] = ordsets:to_list(Set_of_Matching_Commands),
+		1 -> [{true, NumberList, SelectionList, StrList, Command}] = MatchlistCommandAbbreviated,
 		     CommandParam = #command_param{selection_list = SelectionList, number_list = NumberList, str_list = StrList, index_list = Status#status.index},
 		     gen_tcp:send(Socket,<<?CR>>),
 		     gen_tcp:send(Socket,<<?LF>>),
@@ -338,7 +341,7 @@ navigate_in_buffer(BytesBin, Acc, Status, Socket) when is_binary(BytesBin), is_b
 		_ -> io:format("Ambigous commands: ~p~n",[Acc]),
 		     gen_tcp:send(Socket,<<?CR>>),
 		     gen_tcp:send(Socket,<<?LF>>),
-		     gen_tcp:send(Socket,<<"% Ambigous commands registered, this should not occur!!">>),
+		     gen_tcp:send(Socket,<<"% Ambigous command!!">>),
 		     gen_tcp:send(Socket,<<?CR>>),
 		     gen_tcp:send(Socket,<<?LF>>),
 		     gen_tcp:send(Socket,get_prompt(Status)),

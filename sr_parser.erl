@@ -8,8 +8,8 @@
 
 -module(sr_parser).
 -export([match_string/3, pNumber/0, pString/1, pStr/0, pAnd/1, 
-         example1/0, example2/0, example3/0, example4/0, pMaybe/1, pOr/1, 
-	 pWhiteSpace/0, pNumberWhiteSpace/0]).
+         example1/0, example2/0, example3/0, example4/0, example5/0, 
+	 pMaybe/1, pOr/1, pWhiteSpace/0, pNumberWhiteSpace/0]).
 -include("sr_command.hrl").
 -include("sr_telnet.hrl").
 
@@ -78,6 +78,21 @@ example4() ->
     io:format("Number list: ~w~n",[X#state.number_list]),
     io:format("Str list: ~p~n",[X#state.str_list]),
     X.
+
+example5() ->
+    A= pString("michael"),
+    B= pString("andreas"),
+    C= pString("bernd"),
+    X = [A(#state{input="mich"}),B(#state{input="An"}),C(#state{input="ber"})],
+    io:format("Status: ~p~n", [X]),
+    X.
+
+
+
+
+
+
+
 %%%---------------------------------------------------------------------
 %%% Match a specific string.
 %%%---------------------------------------------------------------------
