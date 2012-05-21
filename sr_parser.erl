@@ -105,6 +105,8 @@ pString( MatchString )->
 match_string( MatchString, State ) -> 
     match_string( MatchString, State, []).
 
+
+
 %%% parsing is completed and input is empty
 match_string( [], #state{input=[]}=State, Acc) ->
     NewState = State#state{parsed = lists:reverse(Acc),completion = []},
@@ -124,6 +126,12 @@ match_string( [M | Ms], #state{input=[I|Is]}=State, Acc) when I>=65, I=<90, M ==
 match_string( [], State, Acc) -> 
     NewState = State#state {parsed = lists:reverse(Acc),completion = []},
     {incomplete, NewState};
+
+%%% matchstring is neigther empty nor completed, however input is empty
+%%% and Acc is empty -> the empty string has been parsed.
+match_string( MatchString, #state{input=[]}=State, []) ->
+    NewState = State#state{parsed = [],completion = MatchString},
+    {fail, NewState};
 
 %%% matchstring is neigther empty nor completed, however input is empty
 match_string( MatchString, #state{input=[]}=State, Acc) -> 
