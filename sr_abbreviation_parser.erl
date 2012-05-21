@@ -28,7 +28,7 @@ match_list(MatchString, [Head|Tail], Acc) ->
 
 match(MatchString, Command) ->
     MatchStringStripped = string:strip(MatchString),
-    ParseResult = sr_parser2:parse(MatchStringStripped ,Command#command.cmdstr),	
+    ParseResult = parse(MatchStringStripped ,Command#command.cmdstr),	
     Ok_or_partially_fun = fun(X)->case X of {ok, _State} -> true;{partially, _State} -> true;_-> false end end,
     Ok_or_partially_status = lists:all(Ok_or_partially_fun, ParseResult),
     Extract_fun = fun(X,Accu)->{_, State} =X, AccuNew = #state{number_list = [State#state.number_list|Accu#state.number_list], selection_list= [State#state.selection_list|Accu#state.selection_list], str_list = [State#state.str_list|Accu#state.str_list]},AccuNew end,
