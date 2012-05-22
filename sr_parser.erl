@@ -357,9 +357,9 @@ match_whitespace(#state{input=[I|Is]}=State, Acc) when I== $\s -> % Test (I: Inp
     NewState = State#state{input= Is},
     match_whitespace(NewState, [$\s |Acc]);
 
-match_whitespace(#state{input=Input}=State, Acc) when size(Acc) > 0, length(Input) == 0 -> 
-    NewState = State#state {parsed = lists:reverse(Acc)},
-    {ok, NewState};
+%% match_whitespace(#state{input=Input}=State, Acc) when length(Acc) > 0, length(Input) == 0 -> 
+%%     NewState = State#state {parsed = lists:reverse(Acc)},
+%%     {ok, NewState};
 
 match_whitespace(State, Acc) when length(Acc) > 0 -> 
     NewState = State#state {parsed = lists:reverse(Acc)},
@@ -389,9 +389,9 @@ match_number_whitespace(#state{input=[I|Is]}=State, Acc) when I== $\s -> % Test 
     NewState = State#state{input= Is},
     match_number_whitespace(NewState, [$\s |Acc]);
 
-match_number_whitespace(#state{input=Input}=State, Acc) when size(Acc) > 0, length(Input) == 0 -> 
-    NewState = State#state {parsed = lists:reverse(Acc)},
-    {ok, NewState};
+%% match_number_whitespace(#state{input=Input}=State, Acc) when length(Acc) > 0, length(Input) == 0 -> 
+%%     NewState = State#state {parsed = lists:reverse(Acc)},
+%%     {ok, NewState};
 
 match_number_whitespace(State, Acc) when length(Acc) > 0 -> 
     NewState = State#state {parsed = lists:reverse(Acc)},
