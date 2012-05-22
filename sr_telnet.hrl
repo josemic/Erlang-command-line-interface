@@ -11,7 +11,7 @@
 
 -record(node,   {
 		 node_entry_fun                    ::function(),
-		 commandListTableID   =[]          ::[atom()],
+		 commandListTableID   =[]          ::atom(),
 		 nodeID               =[]          ::atom(),
 		 exec_mode                         ::user | root,
 		 configuration_level        ::string(),
