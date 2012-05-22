@@ -10,7 +10,7 @@
 	{node_entry_fun       = undefined ::function()|undefined, % function or undefined
 	 configuration_level  = undefined ::string()|undefined,   % string or undefined
 	 indention_level      = 0         ::integer(),
-	 exec_mode            = root      ::user | root}).
+	 exec_mode            = root      ::user | privileged}).
 
 -record(command, {funcname           = undefined ::function()|undefined,
 		  cmdstr                         ::[string()],
