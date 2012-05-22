@@ -7,19 +7,19 @@
 -define(SHOW_STR,  "Show running system information").
 
 -record(node_propperties, 
-	{node_entry_fun       = undefined ::function(), % function or undefined
-	 configuration_level  = undefined ::string(),   % string or undefined
+	{node_entry_fun       = undefined ::function()|undefined, % function or undefined
+	 configuration_level  = undefined ::string()|undefined,   % string or undefined
 	 indention_level      = 0         ::integer(),
 	 exec_mode            = root      ::user | root}).
 
--record(command, {funcname           = undefined ::function(),
+-record(command, {funcname           = undefined ::function()|undefined,
 		  cmdstr                         ::[string()],
 		  helpstr                        ::[string()],
-		  basicwrite         = undefined ::function(),  % function or undefined
-		  enhancedwrite      = undefined ::function(),  % function or undefined
-	          alias_ref          = undefined ::atom(),
-	          alias_def          = undefined ::atom(),
-		  hidden             = undefined ::yes | no     % yes, no or undefined   
+		  basicwrite         = undefined ::function()|undefined,  % function or undefined
+		  enhancedwrite      = undefined ::function()|undefined,  % function or undefined
+	          alias_ref          = undefined ::atom()|undefined,
+	          alias_def          = undefined ::atom()|undefined,
+		  hidden             = undefined ::yes | no |undefined    % yes, no or undefined   
 		 }).
 
 -record(command_param, 
