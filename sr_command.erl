@@ -56,8 +56,7 @@ install_default(NodeID) ->
 
     Write_file_fun =  fun (VTY, Command_param) ->
 			      [Filename] = Command_param#command_param.str_list,
-			      Result = file:open(Filename, write),
-			      case Result of 
+			      case  file:open(Filename, [write]) of 
 				  {ok, IoDevice} ->
 				      vty_out(VTY, "%% Writing nodes to file: ~s ~n", [Filename]),
 				      write_nodes({file, IoDevice}),
@@ -66,7 +65,7 @@ install_default(NodeID) ->
 				  {error, Reason} ->
 				      vty_out(VTY, "~nFailed writing to file \"~s\" !!!!! ~n", [Filename]),
 				      vty_out(VTY, "Error reason: ~s ~n", [Reason]),
-				      cmd_warning 
+				      cmd_warning
 			      end
 		      end,
 
