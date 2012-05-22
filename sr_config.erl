@@ -18,7 +18,7 @@ install()->
 			    [Hostname] = Command_param#command_param.str_list,
 			    ets:insert(server_data_table, {hostname,  Hostname}),
 			    sr_command:vty_out(VTY, "%% Set hostname: ~p~n", [Hostname]),
-			    cdmd_success
+			    cmd_success
 		    end,
 
     Hostname_cmd = 
